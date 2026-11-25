@@ -52,6 +52,18 @@ document.addEventListener('DOMContentLoaded', () => {
     el.innerHTML = h + '</table></div>';
   });
 
+  /* Tabela do Shift-And aproximado (k = 1, os três erros) */
+  $$('[data-aprox]').forEach(el => {
+    const T = el.dataset.t, P = el.dataset.p, m = P.length, M = Algos.mascaras(P);
+    const b = x => Algos.bits(x, m).split('').join(' ');
+    let h = '<div class="tw"><table><tr><th>Máscara</th><th>Valor</th></tr>' + Object.keys(M).map(c => `<tr><td class="mono">M[${esc(c)}]</td><td class="mono">${b(M[c])}</td></tr>`).join('') + `<tr><td class="mono">M[outros]</td><td class="mono">${b(0)}</td></tr></table></div>`;
+    h += '<div class="tw"><table><tr><th>Pos.</th><th>Texto</th><th>(R<sub>0</sub> &gt;&gt; 1) | 10<sup>m-1</sup></th><th>R\'<sub>0</sub></th><th>R<sub>1</sub> &gt;&gt; 1</th><th>R\'<sub>1</sub></th><th></th></tr>';
+    Algos.shiftAndAprox1(T, P, { ins: 1, sub: 1, ret: 1 }).forEach(r => {
+      h += `<tr class="${r.exato ? 'hit' : r.aprox ? 'hit2' : ''}"><td>${r.pos}</td><td class="mono">${r.c === ' ' ? '␣' : esc(r.c)}</td><td class="mono">${b(r.meio0)}</td><td class="mono">${b(r.R0)}</td><td class="mono">${b(r.r1s)}</td><td class="mono">${b(r.R1)}</td><td>${r.exato ? '<span class="pill ok">exato</span> ' : ''}${r.aprox ? '<span class="pill blue">aproximado</span>' : ''}</td></tr>`;
+    });
+    el.innerHTML = h + '</table></div>';
+  });
+
   /* Abrir e fechar todas as resoluções */
   const tg = document.getElementById('toggle-all');
   if (tg) tg.onclick = () => {

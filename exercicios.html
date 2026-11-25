@@ -17,6 +17,12 @@
 <div class="layout">
 <aside class="toc"><details open><summary>Sumário</summary><p>Nesta página</p>
   <a href="#como">Como a prova cobra</a>
+  <a href="#t1">Tutoria · BMH e BMHS (código)</a>
+  <a href="#t2">Tutoria · BM ocorrência</a>
+  <a href="#t3">Tutoria · BMHS</a>
+  <a href="#t4">Tutoria · Shift-And aprox.</a>
+  <a href="#t5">Tutoria · Só inserção</a>
+  <a href="#t6">Tutoria · Moffat</a>
   <a href="#p1">Prova · Questão 1 (BMHS)</a>
   <a href="#p2">Prova · Questão 2 (BM e BMH)</a>
   <a href="#p3">Prova · Questão 3 (Shift-And)</a>
@@ -34,7 +40,7 @@
 <div class="hero">
   <p class="eyebrow">Estrutura de Dados II · BCC203</p>
   <h1>Exercícios</h1>
-  <p class="lead">A Prova II de 2024/1 resolvida e sete questões novas no mesmo estilo. Tente fazer no papel antes de abrir a resolução.</p>
+  <p class="lead">A revisão da tutoria (semana 10), a Prova II de 2024/1 e sete questões novas no mesmo estilo, todas resolvidas. Tente fazer no papel antes de abrir a resolução.</p>
   <p style="margin-top:18px"><button id="toggle-all">Mostrar todas as resoluções</button></p>
 </div>
 
@@ -46,7 +52,123 @@
 <tr><td>2</td><td><b>Passo a passo na grade</b>: Boyer-Moore com heurística ocorrência e BMH (com a tabela de deslocamento)</td><td>3 + 3</td></tr>
 <tr><td>3</td><td><b>Alterar o código</b> do Shift-And aproximado para outra combinação de erros</td><td>6</td></tr>
 <tr><td>4</td><td><b>Compressão</b>: vetor resultado de Moffat e Katajainen e os vetores Base e Offset</td><td>4 + 6</td></tr></table></div>
+<p>A revisão da tutoria (semana 10) segue exatamente os mesmos seis tipos: código com o último casamento (BMH e BMHS), BM ocorrência na grade, BMHS com tabela, teste de mesa do Shift-And aproximado, alteração do Shift-And (só inserção) e Moffat com Base e Offset. Por isso ela vem primeiro aqui.</p>
 <div class="box prova"><span class="t">O que isso mostra</span>Em casamento de cadeias, cai código (escrever e alterar) e simulação na grade. Em compressão, cai a conta de Moffat e Katajainen e Base/Offset, sem código.</div>
+</section>
+
+<!-- TUTORIA -->
+<section class="cap" id="t1">
+<h2><span class="n">T1</span>Tutoria · BMH e BMHS com o último casamento</h2>
+<div class="card enun"><p>Faça os módulos <code>long BMH(...)</code> e <code>long BMHS(...)</code> que retornem a posição no texto T em que ocorreu o <b>último casamento</b> do padrão P (primeiro caractere na posição 1; sem casamento, retorne 0).</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p>Os dois são o código do slide com três mudanças: retorno <code>long</code>, variável <code>ultima</code> e <code>return ultima</code>. Entre BMH e BMHS só mudam as linhas marcadas com <b>*</b>.</p>
+<pre class="solcode">long BMH(TipoTexto T, long n, TipoPadrao P, long m)
+{ long i, j, k, d[MAXCHAR + 1], ultima = 0;
+  for (j = 0; j &lt;= MAXCHAR; j++) d[j] = m;              /* * */
+  for (j = 1; j &lt; m; j++) d[P[j-1]] = m - j;            /* * */
+  i = m;
+  while (i &lt;= n)
+  { k = i;  j = m;
+    while (j &gt; 0 &amp;&amp; T[k-1] == P[j-1]) { k--; j--; }
+    if (j == 0) ultima = k + 1;
+    i += d[T[i-1]];                                     /* * */
+  }
+  return ultima;
+}
+
+long BMHS(TipoTexto T, long n, TipoPadrao P, long m)
+{ long i, j, k, d[MAXCHAR + 1], ultima = 0;
+  for (j = 0; j &lt;= MAXCHAR; j++) d[j] = m + 1;          /* * */
+  for (j = 1; j &lt;= m; j++) d[P[j-1]] = m - j + 1;       /* * */
+  i = m;
+  while (i &lt;= n)
+  { k = i;  j = m;
+    while (j &gt; 0 &amp;&amp; T[k-1] == P[j-1]) { k--; j--; }
+    if (j == 0) ultima = k + 1;
+    i += d[T[i]];                                       /* * */
+  }
+  return ultima;
+}</pre>
+</details>
+</section>
+
+<section class="cap" id="t2">
+<h2><span class="n">T2</span>Tutoria · Boyer-Moore (ocorrência)</h2>
+<div class="card enun"><p>Passo a passo do BM com heurística ocorrência para <code>P = "IA"</code> em <code>T = "AUTONOMIA DA IA NA GRECIA"</code> (25 posições, espaços nas posições 10, 13, 16 e 19).</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<div data-grid="bm" data-t="AUTONOMIA DA IA NA GRECIA" data-p="IA"></div>
+<p class="small">Casamentos nas posições <b>8</b>, <b>14</b> e <b>24</b>. Quando o caractere da colisão é um espaço (ou qualquer letra que não seja I à esquerda), o padrão passa inteiro por cima dele: salto 2.</p>
+</details>
+</section>
+
+<section class="cap" id="t3">
+<h2><span class="n">T3</span>Tutoria · BMHS com tabela</h2>
+<div class="card enun"><p>Mesmo texto e padrão da T2, agora com o <b>BMHS</b>, apresentando antes a tabela de deslocamento.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p>m = 2, valor inicial m + 1 = 3. I (j = 1) recebe 2 - 1 + 1 = 2; A (j = 2) recebe 2 - 2 + 1 = 1.</p>
+<div class="dtab"><span>d[I] = 2</span><span>d[A] = 1</span><span>demais (inclusive espaço) = 3</span></div>
+<div data-grid="bmhs" data-t="AUTONOMIA DA IA NA GRECIA" data-p="IA"></div>
+<p class="small">Casamentos nas posições <b>8</b>, <b>14</b> e <b>24</b>. O BMHS usou 10 janelas; o BM, 15. Repare como o espaço logo depois da janela faz saltar 3.</p>
+</details>
+</section>
+
+<section class="cap" id="t4">
+<h2><span class="n">T4</span>Tutoria · Shift-And aproximado (k = 1)</h2>
+<div class="card enun"><p>P = <code>"MIA"</code>, T = <code>"AUTONOMIA DA IA NA GRECIA"</code>, k = 1 (inserção, substituição e retirada). Mostre a tabela M, preencha o teste de mesa e indique as posições de casamentos exatos e aproximados.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<div data-aprox data-t="AUTONOMIA DA IA NA GRECIA" data-p="MIA"></div>
+<p><b>Exato:</b> posição <b>9</b> (fim de "MIA"). <b>Aproximados:</b> posições <b>8, 9, 10, 15 e 25</b> (a 9 aparece nos dois, porque todo casamento exato também é aproximado).</p>
+<p class="small">Fórmula usada: R'<sub>1</sub> = ((R<sub>1</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>0</sub> | (R<sub>0</sub> &gt;&gt; 1) | (R'<sub>0</sub> &gt;&gt; 1) | 100. As posições indicam onde a ocorrência <b>termina</b>.</p>
+</details>
+</section>
+
+<section class="cap" id="t5">
+<h2><span class="n">T5</span>Tutoria · Shift-And só com inserção</h2>
+<div class="card enun"><p>Altere o código do Shift-And aproximado para retornar as ocorrências <b>exatas</b> e as <b>aproximadas</b> com k erros de <b>apenas inserção</b>.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<pre class="solcode">Ri = 1 &lt;&lt; (m - 1);
+for (i = 0; i &lt; n; i++) {
+  Rant = R[0];
+  Rnovo = ((R[0] &gt;&gt; 1) | Ri) &amp; Masc[T[i]];
+  R[0] = Rnovo;
+  if ((Rnovo &amp; 1) != 0)
+    printf("Casamento exato na posicao %ld\n", i + 1);
+  for (j = 1; j &lt;= k; j++) {
+    Rnovo = ((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | Rant | Ri;
+    Rant = R[j];
+    R[j] = Rnovo;
+  }
+  if ((Rnovo &amp; 1) != 0)
+    printf("Casamento aproximado na posicao %ld\n", i + 1);
+}</pre>
+<ul class="small"><li>Saiu <code>((Rant | Rnovo) &gt;&gt; 1)</code>, que era substituição e retirada juntas.</li>
+<li><code>Rant</code> fica, porque a inserção usa o R<sub>j-1</sub> antigo. Por isso <code>Rant = R[0]</code> e <code>Rant = R[j]</code> continuam.</li>
+<li>O novo <code>printf</code> logo depois de <code>R[0] = Rnovo</code> mostra as exatas.</li></ul>
+</details>
+</section>
+
+<section class="cap" id="t6">
+<h2><span class="n">T6</span>Tutoria · Moffat e Katajainen com pontuação</h2>
+<div class="card enun"><p>Considerando cada palavra do texto <code>"Maria colheu flores, Maria colheu rosas; Maria colheu flores e rosas; Maria sorriu"</code>, apresente: a) o vetor resultado de Moffat e Katajainen; b) os vetores Base e Offset.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p><b>Símbolos</b> (regra dos slides: espaço simples implícito, pontuação + espaço vira separador):</p>
+<div class="tw"><table><tr><th>i</th><th>Símbolo</th><th>Freq.</th><th>Comprimento</th><th>Código</th></tr>
+<tr><td>1</td><td class="mono">Maria</td><td>4</td><td>2</td><td class="mono">00</td></tr>
+<tr><td>2</td><td class="mono">colheu</td><td>3</td><td>2</td><td class="mono">01</td></tr>
+<tr><td>3</td><td class="mono">flores</td><td>2</td><td>3</td><td class="mono">100</td></tr>
+<tr><td>4</td><td class="mono">rosas</td><td>2</td><td>3</td><td class="mono">101</td></tr>
+<tr><td>5</td><td class="mono">;␣</td><td>2</td><td>3</td><td class="mono">110</td></tr>
+<tr><td>6</td><td class="mono">,␣</td><td>1</td><td>4</td><td class="mono">1110</td></tr>
+<tr><td>7</td><td class="mono">e</td><td>1</td><td>5</td><td class="mono">11110</td></tr>
+<tr><td>8</td><td class="mono">sorriu</td><td>1</td><td>5</td><td class="mono">11111</td></tr></table></div>
+<p><b>a)</b> Frequências <code>[4, 3, 2, 2, 2, 1, 1, 1]</code>. Fim da 1ª fase: <code>[/, 16, 2, 2, 3, 4, 5, 7]</code>. Fim da 2ª: <code>[/, 0, 1, 1, 2, 2, 3, 4]</code>. <b>Vetor resultado: <code>[2, 2, 3, 3, 3, 4, 5, 5]</code></b>.</p>
+<p><b>b)</b> w1 = 0, w2 = 2, w3 = 3, w4 = 1, w5 = 2.</p>
+<div class="tw"><table><tr><th>c</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+<tr><td>Base[c]</td><td class="mono">0</td><td class="mono">0</td><td class="mono">4</td><td class="mono">14</td><td class="mono">30</td></tr>
+<tr><td>Offset[c]</td><td class="mono">1</td><td class="mono">1</td><td class="mono">3</td><td class="mono">6</td><td class="mono">7</td></tr></table></div>
+<p class="small">Contas: Base[3] = 2 × (0 + 2) = 4; Base[4] = 2 × (4 + 3) = 14; Base[5] = 2 × (14 + 1) = 30. Offset[3] = 1 + 2 = 3; Offset[4] = 3 + 3 = 6; Offset[5] = 6 + 1 = 7.</p>
+<div class="box cuidado"><span class="t">Se a correção ignorar a pontuação</span>Sem os separadores, sobram 6 palavras com frequências <code>[4, 3, 2, 2, 1, 1]</code>. Aí o resultado é <code>[2, 2, 2, 3, 4, 4]</code>, Base = <code>0, 0, 6, 14</code> e Offset = <code>1, 1, 4, 5</code>. O enunciado diz "cada caractere", provavelmente um resto do texto "cada caractere ... é uma palavra" da prova antiga. Pergunte ao tutor qual leitura vale; pela regra dos slides, a pontuação conta.</div>
+</details>
 </section>
 
 <!-- PROVA -->
