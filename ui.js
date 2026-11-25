@@ -11,14 +11,77 @@
     const links = $$('.toc a[href^="#"]');
     if (!links.length) return;
     const secs = links.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
-    const io = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        if (e.isIntersecting) {
-          links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
-        }
+    const marcar = id => links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + id));
+    // Ao clicar num item, marca só ele e ignora a rolagem até ela terminar
+    let travado = false, timer;
+    const destravar = () => { clearTimeout(timer); timer = setTimeout(() => { travado = false; }, 250); };
+    links.forEach(a => a.addEventListener('click', () => {
+      marcar(a.getAttribute('href').slice(1));
+      travado = true; destravar();
+    }));
+    // Seção atual = a última cujo topo já passou de 30% da tela
+    let pedido = false;
+    const atual = () => {
+      pedido = false;
+      if (travado) return;
+      const lim = window.innerHeight * 0.3;
+      let id = secs[0].id;
+      secs.forEach(s => { if (s.getBoundingClientRect().top <= lim) id = s.id; });
+      marcar(id);
+    };
+    window.addEventListener('scroll', () => {
+      if (travado) { destravar(); return; }
+      if (!pedido) { pedido = true; requestAnimationFrame(atual); }
+    }, { passive: true });
+    atual();
+    checklist(links, secs);
+  }
+
+  /* ---------- Checklist: tópicos já vistos (salvo neste navegador) ---------- */
+  function checklist(links, secs) {
+    const chave = 'ed2-vistos:' + (location.pathname.split('/').pop() || 'index');
+    let vistos = {};
+    try { vistos = JSON.parse(localStorage.getItem(chave)) || {}; } catch (e) {}
+    const salvar = () => { try { localStorage.setItem(chave, JSON.stringify(vistos)); } catch (e) {} };
+    const tocBox = $('.toc details');
+    const prog = document.createElement('div');
+    prog.className = 'progress';
+    prog.innerHTML = '<div class="ptext"></div><div class="pbar"><span></span></div><button type="button" class="preset">Desmarcar tudo</button>';
+    tocBox.insertBefore(prog, links[0]);
+    const botoes = {};
+    const atualizar = () => {
+      const total = secs.length, feitos = secs.filter(s => vistos[s.id]).length;
+      $('.ptext', prog).innerHTML = `<b>${feitos} de ${total}</b> tópicos vistos`;
+      $('.pbar span', prog).style.width = (feitos / total * 100) + '%';
+      $('.preset', prog).hidden = feitos === 0;
+      links.forEach(a => a.classList.toggle('visto', !!vistos[a.getAttribute('href').slice(1)]));
+      Object.entries(botoes).forEach(([id, b]) => {
+        b.classList.toggle('on', !!vistos[id]);
+        b.setAttribute('aria-pressed', !!vistos[id]);
+        $('.txt', b).textContent = vistos[id] ? 'Visto' : 'Marcar como visto';
       });
-    }, { rootMargin: '-20% 0px -70% 0px' });
-    secs.forEach(s => io.observe(s));
+    };
+    const alternar = id => { if (vistos[id]) delete vistos[id]; else vistos[id] = true; salvar(); atualizar(); };
+    links.forEach(a => {
+      const id = a.getAttribute('href').slice(1);
+      const tick = document.createElement('span');
+      tick.className = 'tick'; tick.title = 'Marcar como visto';
+      tick.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); alternar(id); });
+      a.prepend(tick);
+    });
+    secs.forEach(sec => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'done-btn';
+      b.innerHTML = '<span class="ic"></span><span class="txt"></span>';
+      b.onclick = () => alternar(sec.id);
+      const h2 = $('h2', sec);
+      const wrap = document.createElement('div');
+      wrap.className = 'h2row';
+      h2.replaceWith(wrap); wrap.append(h2, b);
+      botoes[sec.id] = b;
+    });
+    $('.preset', prog).onclick = () => { vistos = {}; salvar(); atualizar(); };
+    atualizar();
   }
 
   /* ---------- Realce de sintaxe C simples ---------- */
