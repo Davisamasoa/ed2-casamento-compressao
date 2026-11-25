@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exercícios | ED II</title>
+<meta name="description" content="Prova antiga resolvida e questões novas no mesmo formato: BMHS, Boyer-Moore, BMH, Shift-And e Moffat-Katajainen.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <a class="brand" href="index.html">ED II · Revisão</a>
+  <nav><a href="index.html">Início</a><a href="casamento.html">Casamento de cadeias</a><a href="compressao.html">Compressão de textos</a><a class="on" href="exercicios.html">Exercícios</a></nav>
+</div></header>
+
+<div class="layout">
+<aside class="toc"><details open><summary>Sumário</summary><p>Nesta página</p>
+  <a href="#como">Como a prova cobra</a>
+  <a href="#p1">Prova · Questão 1 (BMHS)</a>
+  <a href="#p2">Prova · Questão 2 (BM e BMH)</a>
+  <a href="#p3">Prova · Questão 3 (Shift-And)</a>
+  <a href="#p4">Prova · Questão 4 (Moffat)</a>
+  <a href="#n1">Nova 1 · Código BMH</a>
+  <a href="#n2">Nova 2 · Código Shift-And</a>
+  <a href="#n3">Nova 3 · BM e BMH</a>
+  <a href="#n4">Nova 4 · BMHS</a>
+  <a href="#n5">Nova 5 · Tabela Shift-And</a>
+  <a href="#n6">Nova 6 · Shift-And aprox.</a>
+  <a href="#n7">Nova 7 · Moffat</a>
+</details></aside>
+
+<main>
+<div class="hero">
+  <p class="eyebrow">Estrutura de Dados II · BCC203</p>
+  <h1>Exercícios</h1>
+  <p class="lead">A Prova II de 2024/1 resolvida e sete questões novas no mesmo estilo. Tente fazer no papel antes de abrir a resolução.</p>
+  <p style="margin-top:18px"><button id="toggle-all">Mostrar todas as resoluções</button></p>
+</div>
+
+<section class="cap" id="como">
+<h2><span class="n">0</span>Como a prova cobra</h2>
+<p>A Prova II de 2024/1 (30 pontos) teve quatro questões. O padrão é claro:</p>
+<div class="tw"><table><tr><th>Questão</th><th>Tipo</th><th>Pontos</th></tr>
+<tr><td>1</td><td><b>Escrever código</b> de um algoritmo de casamento, com uma pequena mudança (retornar a última ocorrência)</td><td>8</td></tr>
+<tr><td>2</td><td><b>Passo a passo na grade</b>: Boyer-Moore com heurística ocorrência e BMH (com a tabela de deslocamento)</td><td>3 + 3</td></tr>
+<tr><td>3</td><td><b>Alterar o código</b> do Shift-And aproximado para outra combinação de erros</td><td>6</td></tr>
+<tr><td>4</td><td><b>Compressão</b>: vetor resultado de Moffat e Katajainen e os vetores Base e Offset</td><td>4 + 6</td></tr></table></div>
+<div class="box prova"><span class="t">O que isso mostra</span>Em casamento de cadeias, cai código (escrever e alterar) e simulação na grade. Em compressão, cai a conta de Moffat e Katajainen e Base/Offset, sem código.</div>
+</section>
+
+<!-- PROVA -->
+<section class="cap" id="p1">
+<h2><span class="n">P1</span>Questão 1 (8 pontos): BMHS com a última ocorrência</h2>
+<div class="card enun"><p>Faça o módulo <code>long BMHS(TipoTexto T, long n, TipoPadrao P, long m)</code> que retorne a posição no texto T (de tamanho n) da <b>última ocorrência</b> do padrão P (de tamanho m), seguindo o funcionamento do BMHS visto em aula. Considere que o primeiro caractere do texto está na posição 1. Se não houver o padrão no texto, retorne 0.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p>É o BMHS dos slides com uma variável <code>ultima</code>: cada casamento sobrescreve a anterior, então no fim sobra a última.</p>
+<pre class="solcode">long BMHS(TipoTexto T, long n, TipoPadrao P, long m)
+{ long i, j, k, d[MAXCHAR + 1], ultima = 0;
+  for (j = 0; j &lt;= MAXCHAR; j++) d[j] = m + 1;
+  for (j = 1; j &lt;= m; j++) d[P[j-1]] = m - j + 1;
+  i = m;
+  while (i &lt;= n)
+  { k = i;
+    j = m;
+    while (j &gt; 0 &amp;&amp; T[k-1] == P[j-1]) { k--; j--; }
+    if (j == 0) ultima = k + 1;   /* guarda o início do casamento */
+    i += d[T[i]];
+  }
+  return ultima;                  /* 0 se nunca casou */
+}</pre>
+<ul class="small">
+<li>Mudanças em relação ao slide: tipo de retorno <code>long</code>, a variável <code>ultima</code> e o <code>return</code>.</li>
+<li>Coloquei <code>j &gt; 0</code> antes da comparação para nunca acessar <code>P[-1]</code>. O slide escreve na ordem inversa; as duas são aceitas em sala, mas essa é mais segura.</li>
+<li>Variação possível: percorrer de trás para frente e parar no primeiro casamento. Mas aí o algoritmo deixa de ser o BMHS "como apresentado em sala", então a versão acima é a mais segura para a prova.</li>
+</ul>
+</details>
+</section>
+
+<section class="cap" id="p2">
+<h2><span class="n">P2</span>Questão 2 (6 pontos): Boyer-Moore e BMH</h2>
+<div class="card enun"><p>Texto <code>T = "ABRCCABABRACCAABRACCA"</code> e padrão <code>P = "BRACC"</code>.</p>
+<p>a) (3 pontos) Passo a passo da pesquisa com <b>Boyer-Moore, heurística ocorrência</b>.<br>b) (3 pontos) Passo a passo com <b>BMH</b>, apresentando antes a tabela de deslocamento.</p></div>
+<details class="sol"><summary>Ver resolução do item a</summary>
+<p>Regra da heurística ocorrência: compara de trás para frente. Na colisão, procura no padrão, <b>à esquerda do ponto de colisão</b>, o caractere do texto que colidiu e alinha os dois. Se não existir, o padrão passa inteiro por cima dele.</p>
+<div data-grid="bm" data-t="ABRCCABABRACCAABRACCA" data-p="BRACC"></div>
+<p class="small muted">Verde: casou. Vermelho: colisão. Casamentos nas posições <b>9</b> e <b>16</b>. Depois de um casamento, a convenção usada aqui é andar 1 posição.</p>
+</details>
+<details class="sol"><summary>Ver resolução do item b</summary>
+<p><b>Tabela de deslocamento</b> (m = 5; entram os 4 primeiros caracteres, B R A C):</p>
+<div class="dtab"><span>d[B] = 4</span><span>d[R] = 3</span><span>d[A] = 2</span><span>d[C] = 1</span><span>demais = 5</span></div>
+<div data-grid="bmh" data-t="ABRCCABABRACCAABRACCA" data-p="BRACC"></div>
+<p class="small muted">O salto sempre usa o caractere do texto alinhado com o <b>último</b> caractere do padrão, não importa onde houve a colisão. Casamentos nas posições <b>9</b> e <b>16</b>.</p>
+</details>
+</section>
+
+<section class="cap" id="p3">
+<h2><span class="n">P3</span>Questão 3 (6 pontos): Shift-And só com retirada</h2>
+<div class="card enun"><p>Dado o código do Shift-And aproximado (inserção, substituição e retirada), <b>altere-o</b> para retornar as ocorrências <b>exatas</b> e as ocorrências <b>aproximadas</b> considerando k erros de <b>apenas retirada</b>.</p>
+<pre class="solcode">for (j = 1; j &lt;= k; j++) {
+  Rnovo = ((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | Rant | ((Rant | Rnovo) &gt;&gt; 1) | Ri;
+  Rant = R[j];
+  R[j] = Rnovo;
+}</pre></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p>Na fórmula original, cada pedaço é uma operação:</p>
+<ul class="small"><li><code>Rant</code> (R<sub>j-1</sub> antigo): inserção. <b>Sai.</b></li>
+<li><code>Rant &gt;&gt; 1</code>: substituição. <b>Sai.</b></li>
+<li><code>Rnovo &gt;&gt; 1</code> (R'<sub>j-1</sub>, já atualizado): retirada. <b>Fica.</b></li></ul>
+<pre class="solcode">Ri = 1 &lt;&lt; (m - 1);
+for (i = 0; i &lt; n; i++) {
+  Rnovo = ((R[0] &gt;&gt; 1) | Ri) &amp; Masc[T[i]];
+  R[0] = Rnovo;
+  if ((Rnovo &amp; 1) != 0)
+    printf("Casamento exato na posicao %ld\n", i + 1);
+  for (j = 1; j &lt;= k; j++) {
+    Rnovo = ((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | (Rnovo &gt;&gt; 1) | Ri;
+    R[j] = Rnovo;
+  }
+  if ((Rnovo &amp; 1) != 0)
+    printf("Casamento aproximado na posicao %ld\n", i + 1);
+}</pre>
+<ul class="small">
+<li><code>Rant</code> não é mais necessário: só servia para inserção e substituição.</li>
+<li>Dentro do laço, antes da atribuição, <code>Rnovo</code> ainda guarda o R' do nível anterior, que é exatamente o que a retirada usa.</li>
+<li>O teste logo após atualizar <code>R[0]</code> dá as ocorrências <b>exatas</b>; o teste no fim dá as <b>aproximadas</b> (com até k retiradas). A inicialização <code>R[j] = 1<sup>j</sup>0<sup>m-j</sup></code> continua igual.</li>
+</ul>
+</details>
+</section>
+
+<section class="cap" id="p4">
+<h2><span class="n">P4</span>Questão 4 (10 pontos): Moffat e Katajainen, Base e Offset</h2>
+<div class="card enun"><p>Considerando que cada caractere do texto <code>"A A A A B B B B C C C D D E E F"</code> é uma palavra, apresente:<br>a) (4 pontos) o vetor resultado da execução do algoritmo de Moffat e Katajainen;<br>b) (6 pontos) a partir do vetor resultado, os vetores Base e Offset.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p><b>Frequências em ordem decrescente:</b> A = 4, B = 4, C = 3, D = 2, E = 2, F = 1, ou seja <code>A = [4, 4, 3, 2, 2, 1]</code>.</p>
+<div class="tw"><table><tr><th>Fase</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>O que significa</th></tr>
+<tr><td>Entrada</td><td class="mono">4</td><td class="mono">4</td><td class="mono">3</td><td class="mono">2</td><td class="mono">2</td><td class="mono">1</td><td>frequências</td></tr>
+<tr><td>Fim da 1ª</td><td class="mono">/</td><td class="mono">16</td><td class="mono">2</td><td class="mono">2</td><td class="mono">3</td><td class="mono">5</td><td>peso total e pais dos nós internos</td></tr>
+<tr><td>Fim da 2ª</td><td class="mono">/</td><td class="mono">0</td><td class="mono">1</td><td class="mono">1</td><td class="mono">2</td><td class="mono">3</td><td>profundidade dos nós internos</td></tr>
+<tr class="hit"><td><b>Fim da 3ª</b></td><td class="mono">2</td><td class="mono">2</td><td class="mono">2</td><td class="mono">3</td><td class="mono">4</td><td class="mono">4</td><td><b>comprimento dos códigos</b></td></tr></table></div>
+<p><b>a) Vetor resultado:</b> <code>[2, 2, 2, 3, 4, 4]</code>. A, B e C com 2 bits; D com 3; E e F com 4.</p>
+<p class="small">Fase 3 por níveis: nível 0 tem 1 nó interno; nível 1 tem 2 nós, ambos internos; nível 2 tem 4 nós, 1 interno, então <b>3 folhas de comprimento 2</b>; nível 3 tem 2 nós, 1 interno, então <b>1 folha de comprimento 3</b>; nível 4 tem 2 nós, nenhum interno: <b>2 folhas de comprimento 4</b>.</p>
+<p><b>b) Base e Offset</b> (w<sub>c</sub> = quantos códigos têm comprimento c: w1 = 0, w2 = 3, w3 = 1, w4 = 2):</p>
+<div class="tw"><table><tr><th>c</th><th>Base[c]</th><th>Conta</th><th>Offset[c]</th></tr>
+<tr><td>1</td><td class="mono">0</td><td>regra inicial</td><td class="mono">1</td></tr>
+<tr><td>2</td><td class="mono">0</td><td>2 × (0 + 0)</td><td class="mono">1</td></tr>
+<tr><td>3</td><td class="mono">6</td><td>2 × (0 + 3)</td><td class="mono">4</td></tr>
+<tr><td>4</td><td class="mono">14</td><td>2 × (6 + 1)</td><td class="mono">5</td></tr></table></div>
+<p class="small">Conferência com os códigos canônicos: A = <code>00</code>, B = <code>01</code>, C = <code>10</code>, D = <code>110</code> (6), E = <code>1110</code> (14), F = <code>1111</code>.</p>
+<div class="box cuidado"><span class="t">Comprimento sem código</span>Não há código de comprimento 1. Aqui Offset[1] = 1 (o índice da próxima palavra), a mesma convenção usada na página de compressão. Se o professor usar outra convenção para comprimentos vazios, ajuste só essa linha.</div>
+</details>
+</section>
+
+<!-- NOVAS -->
+<section class="cap" id="n1">
+<h2><span class="n">N1</span>Código: BMH que conta ocorrências</h2>
+<div class="card enun"><p>Faça o módulo <code>long BMH(TipoTexto T, long n, TipoPadrao P, long m)</code> que retorne a <b>quantidade</b> de ocorrências do padrão P no texto T, seguindo o método Boyer-Moore-Horspool.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<pre class="solcode">long BMH(TipoTexto T, long n, TipoPadrao P, long m)
+{ long i, j, k, d[MAXCHAR + 1], cont = 0;
+  for (j = 0; j &lt;= MAXCHAR; j++) d[j] = m;
+  for (j = 1; j &lt; m; j++) d[P[j-1]] = m - j;
+  i = m;
+  while (i &lt;= n)
+  { k = i;
+    j = m;
+    while (j &gt; 0 &amp;&amp; T[k-1] == P[j-1]) { k--; j--; }
+    if (j == 0) cont++;
+    i += d[T[i-1]];
+  }
+  return cont;
+}</pre>
+<p class="small">Os pontos que a correção olha: <code>d[j] = m</code>; laço até <code>j &lt; m</code> (o último caractere fica de fora); salto por <code>T[i-1]</code>.</p>
+</details>
+</section>
+
+<section class="cap" id="n2">
+<h2><span class="n">N2</span>Código: Shift-And que retorna a primeira ocorrência</h2>
+<div class="card enun"><p>Faça o módulo <code>long ShiftAnd(TipoTexto T, long n, TipoPadrao P, long m)</code> que retorne a posição (começando em 1) da <b>primeira ocorrência exata</b> de P em T usando o Shift-And. Se não houver, retorne 0.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<pre class="solcode">long ShiftAnd(TipoTexto T, long n, TipoPadrao P, long m)
+{ long Masc[MAXCHAR], i, R = 0, Ri = 1 &lt;&lt; (m - 1);
+  for (i = 0; i &lt; MAXCHAR; i++) Masc[i] = 0;
+  for (i = 1; i &lt;= m; i++) Masc[P[i-1] + 127] |= 1 &lt;&lt; (m - i);
+  for (i = 0; i &lt; n; i++)
+  { R = (((unsigned long)R &gt;&gt; 1) | Ri) &amp; Masc[T[i] + 127];
+    if ((R &amp; 1) != 0) return i - m + 2;   /* início da ocorrência */
+  }
+  return 0;
+}</pre>
+<p class="small">O último bit ligado indica que o padrão <b>terminou</b> na posição <code>i + 1</code>; o início é <code>i + 1 - m + 1 = i - m + 2</code>. Se a questão pedir a posição final, retorne <code>i + 1</code>.</p>
+</details>
+</section>
+
+<section class="cap" id="n3">
+<h2><span class="n">N3</span>Boyer-Moore (ocorrência) e BMH</h2>
+<div class="card enun"><p>Texto <code>T = "TACGTTAGCATGCATGC"</code> e padrão <code>P = "CATG"</code>.<br>a) Passo a passo com Boyer-Moore, heurística ocorrência.<br>b) Tabela de deslocamento e passo a passo com BMH.<br>c) Quantas janelas cada um usou? Por que o BMH andou tanto aqui?</p></div>
+<details class="sol"><summary>Ver resolução do item a</summary>
+<div data-grid="bm" data-t="TACGTTAGCATGCATGC" data-p="CATG"></div>
+</details>
+<details class="sol"><summary>Ver resolução dos itens b e c</summary>
+<div class="dtab"><span>d[C] = 3</span><span>d[A] = 2</span><span>d[T] = 1</span><span>demais (G) = 4</span></div>
+<div data-grid="bmh" data-t="TACGTTAGCATGCATGC" data-p="CATG"></div>
+<p class="small"><b>c)</b> BM: 8 janelas. BMH: 4 janelas. O último caractere do padrão é <code>G</code>, que não aparece antes no padrão, então <code>d[G] = m = 4</code>. Toda janela que termina em G salta o padrão inteiro.</p>
+</details>
+</section>
+
+<section class="cap" id="n4">
+<h2><span class="n">N4</span>BMHS passo a passo</h2>
+<div class="card enun"><p>Texto <code>T = "CABACCABBACABAC"</code> e padrão <code>P = "ABAC"</code>. Apresente a tabela de deslocamento do <b>BMHS</b> e o passo a passo.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p>m = 4, valor inicial m + 1 = 5. Entram <b>todos</b> os caracteres: A = 4, B = 3, A = 2, C = 1; ficam os menores.</p>
+<div class="dtab"><span>d[A] = 2</span><span>d[B] = 3</span><span>d[C] = 1</span><span>demais = 5</span></div>
+<div data-grid="bmhs" data-t="CABACCABBACABAC" data-p="ABAC"></div>
+<p class="small muted">Casamentos nas posições <b>2</b> e <b>12</b>. Na última janela não há caractere depois dela, então a busca acaba.</p>
+</details>
+</section>
+
+<section class="cap" id="n5">
+<h2><span class="n">N5</span>Tabela do Shift-And exato</h2>
+<div class="card enun"><p>Para <code>P = "abra"</code> e <code>T = "abracadabra"</code>, apresente as máscaras M e a tabela de execução do Shift-And exato.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p>Máscaras: <code>M[a] = 1001</code>, <code>M[b] = 0100</code>, <code>M[r] = 0010</code>, demais = <code>0000</code>.</p>
+<div data-shiftand data-t="abracadabra" data-p="abra"></div>
+<p class="small">Repare que <code>a</code> aparece no início e no fim do padrão: depois do casamento na posição 1, o último <code>a</code> já liga de novo o 1º bit, permitindo um novo casamento logo em seguida.</p>
+</details>
+</section>
+
+<section class="cap" id="n6">
+<h2><span class="n">N6</span>Shift-And aproximado: inserção e substituição</h2>
+<div class="card enun"><p>Altere o laço do Shift-And aproximado (mesmo código da Questão 3) para considerar k erros de <b>inserção e substituição</b>, sem retirada.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<pre class="solcode">for (j = 1; j &lt;= k; j++) {
+  Rnovo = ((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | Rant | (Rant &gt;&gt; 1) | Ri;
+  Rant = R[j];
+  R[j] = Rnovo;
+}</pre>
+<p class="small">Sai só o <code>Rnovo &gt;&gt; 1</code> (retirada). <code>Rant</code> (inserção) e <code>Rant &gt;&gt; 1</code> (substituição) ficam, e por isso <code>Rant = R[j]</code> continua necessário.</p>
+<div class="tw"><table><tr><th>Quero só...</th><th>Termo que entra no R'<sub>j</sub></th></tr>
+<tr><td>Inserção</td><td class="mono">Rant</td></tr><tr><td>Substituição</td><td class="mono">Rant &gt;&gt; 1</td></tr><tr><td>Retirada</td><td class="mono">Rnovo &gt;&gt; 1</td></tr></table></div>
+</details>
+</section>
+
+<section class="cap" id="n7">
+<h2><span class="n">N7</span>Moffat e Katajainen, Base e Offset</h2>
+<div class="card enun"><p>Considerando cada caractere do texto <code>"A A A A A B B B C C C D D E F G"</code> uma palavra, apresente: a) o vetor resultado de Moffat e Katajainen; b) os vetores Base e Offset; c) o código canônico de cada palavra.</p></div>
+<details class="sol"><summary>Ver resolução</summary>
+<p>Frequências em ordem decrescente: <code>[5, 3, 3, 2, 1, 1, 1]</code> (A, B, C, D, E, F, G).</p>
+<div class="tw"><table><tr><th>Fase</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr>
+<tr><td>Fim da 1ª</td><td class="mono">/</td><td class="mono">16</td><td class="mono">2</td><td class="mono">2</td><td class="mono">3</td><td class="mono">5</td><td class="mono">6</td></tr>
+<tr><td>Fim da 2ª</td><td class="mono">/</td><td class="mono">0</td><td class="mono">1</td><td class="mono">1</td><td class="mono">2</td><td class="mono">3</td><td class="mono">4</td></tr>
+<tr class="hit"><td><b>Resultado</b></td><td class="mono">2</td><td class="mono">2</td><td class="mono">2</td><td class="mono">3</td><td class="mono">4</td><td class="mono">5</td><td class="mono">5</td></tr></table></div>
+<div class="tw"><table><tr><th>c</th><th>w<sub>c</sub></th><th>Base[c]</th><th>Offset[c]</th></tr>
+<tr><td>1</td><td>0</td><td class="mono">0</td><td class="mono">1</td></tr>
+<tr><td>2</td><td>3</td><td class="mono">0</td><td class="mono">1</td></tr>
+<tr><td>3</td><td>1</td><td class="mono">6</td><td class="mono">4</td></tr>
+<tr><td>4</td><td>1</td><td class="mono">14</td><td class="mono">5</td></tr>
+<tr><td>5</td><td>2</td><td class="mono">30</td><td class="mono">6</td></tr></table></div>
+<p><b>c)</b> A = <code>00</code>, B = <code>01</code>, C = <code>10</code>, D = <code>110</code>, E = <code>1110</code>, F = <code>11110</code>, G = <code>11111</code>.</p>
+<p class="small">Conferência pela fórmula: G é o índice 7, comprimento 5: 7 - Offset[5] + Base[5] = 7 - 6 + 30 = 31 = <code>11111</code>.</p>
+</details>
+<div class="next"><a href="compressao.html">← Compressão de textos</a><a href="index.html">Início →</a></div>
+</section>
+</main>
+</div>
+<footer>Material de revisão baseado nos slides de Estrutura de Dados II (BCC203), UFOP, Prof. Guilherme Tavares de Assis.</footer>
+<script src="algos.js"></script>
+<script src="bm.js"></script>
+<script src="ui.js"></script>
+<script src="exercicios.js"></script>
+</body>
+</html>

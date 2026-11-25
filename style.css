@@ -199,3 +199,21 @@ footer { border-top: 1px solid var(--line); color: var(--text-3); font-size: 14p
 .next { display: flex; justify-content: space-between; gap: 12px; margin-top: 56px; flex-wrap: wrap; }
 .next a { border: 1px solid var(--line); background: var(--surface); padding: 14px 18px; border-radius: 12px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; } }
+
+/* Exercícios */
+.enun { border-left: 3px solid var(--accent); }
+.enun p:first-child { margin-top: 0; } .enun p:last-child, .enun pre:last-child { margin-bottom: 0; }
+details.sol { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin: 12px 0; padding: 0 18px; transition: border-color .18s ease; }
+details.sol[open] { padding-bottom: 14px; border-color: color-mix(in srgb, var(--ok) 35%, var(--line)); }
+details.sol > summary { cursor: pointer; font-weight: 600; padding: 12px 0; color: var(--ok); list-style: none; }
+details.sol > summary::-webkit-details-marker { display: none; }
+details.sol > summary::before { content: "+"; display: inline-block; width: 18px; transition: transform .18s ease; }
+details.sol[open] > summary::before { content: "−"; }
+pre.solcode { font: 14px/1.6 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+table.grade th, table.grade td { text-align: center; padding: 5px 0; min-width: 26px; font-family: var(--mono); border-right: 1px solid var(--line); }
+table.grade tr.txt td { font-weight: 700; background: var(--surface-2); }
+table.grade td.num { color: var(--text-3); font-size: 12px; }
+table.grade td.g-ok { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
+table.grade td.g-bad { background: var(--bad-soft); color: var(--bad); font-weight: 700; }
+ol.passos { font-size: 15px; } ol.passos li { margin: 6px 0; }
+.okt { color: var(--ok); }
