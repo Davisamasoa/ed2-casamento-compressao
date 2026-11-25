@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compressão de Textos | ED II</title>
+<meta name="description" content="Compressão de textos explicada: Huffman por palavras, árvore canônica, algoritmo de Moffat e Katajainen, códigos canônicos, Base e Offset.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <a class="brand" href="index.html">ED II · Revisão</a>
+  <nav><a href="index.html">Início</a><a href="casamento.html">Casamento de cadeias</a><a class="on" href="compressao.html">Compressão de textos</a></nav>
+</div></header>
+
+<div class="layout">
+<aside class="toc"><details open><summary>Sumário</summary><p>Nesta página</p>
+  <a href="#intro">1. Por que comprimir</a>
+  <a href="#razao">2. Razão de compressão</a>
+  <a href="#huffman">3. A ideia de Huffman</a>
+  <a href="#palavras">4. Huffman com palavras</a>
+  <a href="#arvore">5. Árvore de codificação</a>
+  <a href="#canonica">6. Árvore canônica</a>
+  <a href="#moffat">7. Moffat e Katajainen</a>
+  <a href="#codigos">8. Códigos canônicos</a>
+  <a href="#basoff">9. Base e Offset</a>
+  <a href="#processo">10. Compressão e descompressão</a>
+  <a href="#lab">11. Laboratório</a>
+  <a href="#resumo">12. Resumo para a prova</a>
+</details></aside>
+
+<main>
+<div class="hero">
+  <p class="eyebrow">Estrutura de Dados II · BCC203</p>
+  <h1>Compressão de Textos</h1>
+  <p class="lead">Como guardar um texto ocupando menos espaço, trocando cada palavra por um código de bits. Aqui o foco é entender o porquê de cada passo; o código aparece só para ajudar a enxergar a ideia.</p>
+</div>
+<div class="box prova"><span class="t">Como estudar esta matéria</span>Na prova, compressão não cobra exercício de código. Cobra os conceitos: o que é razão de compressão, como a árvore de Huffman é montada, o que é árvore canônica, para que servem as três fases de Moffat e Katajainen, como funcionam Base e Offset. Os pseudocódigos estão aqui só como apoio.</div>
+
+<!-- 1 -->
+<section class="cap" id="intro">
+<h2><span class="n">1</span>Por que comprimir</h2>
+<p>Comprimir é representar o texto original em <b>menos espaço</b>, trocando os símbolos do texto por outros que ocupam menos bits ou bytes.</p>
+<div class="grid2">
+  <div class="card"><h4><span class="pill ok">Ganho</span></h4><p class="small">O texto ocupa menos espaço, então leva menos tempo para ser <b>lido do disco</b>, <b>transmitido</b> pela rede e <b>pesquisado</b>.</p></div>
+  <div class="card"><h4><span class="pill bad">Preço</span></h4><p class="small">Custo de processamento para <b>codificar</b> e <b>decodificar</b> o texto.</p></div>
+</div>
+<h3>O que mais importa além do espaço</h3>
+<ul>
+  <li><b>Velocidade de compressão e de descompressão.</b> Muitas vezes descomprimir rápido importa mais que comprimir rápido. Num banco de dados textual, o texto é comprimido uma vez e lido muitas.</li>
+  <li><b>Casamento de cadeias direto no texto comprimido.</b> Procurar a cadeia já comprimida pode ser bem mais eficiente do que descomprimir tudo para procurar.</li>
+  <li><b>Acesso direto</b> a qualquer parte do texto comprimido, podendo descomprimir a partir dali. Um sistema de recuperação de informação com grandes coleções precisa disso.</li>
+</ul>
+</section>
+
+<!-- 2 -->
+<section class="cap" id="razao">
+<h2><span class="n">2</span>Razão de compressão</h2>
+<p>É a <b>porcentagem que o arquivo comprimido representa</b> em relação ao original. Mede o ganho de espaço de um método.</p>
+<div class="formula">razão = tamanho comprimido / tamanho original × 100%</div>
+<p>Exemplo: original com 100 bytes, comprimido com 30 bytes: razão de <b>30%</b>.</p>
+<div class="box cuidado"><span class="t">Cuidado com a leitura</span>Razão <b>menor</b> é melhor. 30% quer dizer que sobrou 30% do tamanho (economizou 70%).</div>
+</section>
+
+<!-- 3 -->
+<section class="cap" id="huffman">
+<h2><span class="n">3</span>A ideia de Huffman</h2>
+<p>Proposto em 1952, é um dos métodos de codificação mais conhecidos.</p>
+<ul>
+  <li>Cada símbolo diferente do texto recebe um <b>código único, de tamanho variável</b>.</li>
+  <li>Símbolos <b>frequentes</b> ganham códigos <b>curtos</b>; símbolos raros ganham códigos longos.</li>
+  <li>As implementações tradicionais usam <b>caracteres</b> como símbolos.</li>
+</ul>
+<div class="box ideia"><span class="t">Intuição</span>É como abreviar o que você mais escreve. Se "rosa" aparece toda hora, vale muito a pena que ela vire um único bit, mesmo que palavras raras fiquem com códigos maiores.</div>
+<p>Para sistemas de recuperação de informação (RI), o melhor é usar <b>palavras</b> como símbolos:</p>
+<div class="grid2">
+  <div class="card"><h4>Huffman por caracteres</h4><p class="small">Comprime o texto para cerca de <b>60%</b>.</p></div>
+  <div class="card"><h4>Huffman por palavras</h4><p class="small">Comprime o texto para cerca de <b>25%</b>.</p></div>
+</div>
+</section>
+
+<!-- 4 -->
+<section class="cap" id="palavras">
+<h2><span class="n">4</span>Huffman usando palavras</h2>
+<p>É a técnica <b>mais eficaz</b> para textos em linguagem natural.</p>
+<ol>
+  <li>Cada palavra diferente vira um símbolo. Conta-se a frequência de cada uma e gera-se o código de Huffman.</li>
+  <li>Comprime substituindo cada palavra pelo seu código.</li>
+</ol>
+<p>Por isso a compressão faz <b>duas passadas</b> no texto: uma para contar as frequências e outra para comprimir.</p>
+<div class="box ideia"><span class="t">Bônus: integração com arquivo invertido</span>A tabela de símbolos do codificador é exatamente o <b>vocabulário</b> do texto. Isso casa naturalmente com o arquivo invertido usado em sistemas de RI.</div>
+<h3>E os espaços e a pontuação?</h3>
+<p>O texto tem <b>palavras</b> e <b>separadores</b> (espaço, vírgula, ponto...). Truque: o <b>espaço simples</b> fica <b>implícito</b>.</p>
+<ul>
+  <li>Palavra seguida de um espaço simples: codifica só a palavra.</li>
+  <li>Caso contrário: a palavra e o separador são codificados separadamente.</li>
+  <li>Na decodificação, supõe-se que depois de cada palavra vem um espaço, a não ser que o próximo símbolo seja um separador.</li>
+</ul>
+<div class="card"><p style="margin-top:0">Texto: <b>"para cada rosa rosa, uma rosa é uma rosa"</b></p>
+<p style="margin-bottom:0">Símbolos: <span class="pill">para</span> <span class="pill">cada</span> <span class="pill">rosa</span> <span class="pill">rosa</span> <span class="pill blue">,␣</span> <span class="pill">uma</span> <span class="pill">rosa</span> <span class="pill">é</span> <span class="pill">uma</span> <span class="pill">rosa</span><br><span class="small muted">A vírgula seguida de espaço vira o separador ",␣". Os outros espaços somem.</span></p></div>
+</section>
+
+<!-- 5 -->
+<section class="cap" id="arvore">
+<h2><span class="n">5</span>Árvore de codificação</h2>
+<p>Huffman monta uma árvore <b>de baixo para cima</b>:</p>
+<ol>
+  <li>Começa com <b>n folhas</b>, uma para cada palavra do vocabulário, com sua frequência.</li>
+  <li>A cada iteração, junta as <b>duas árvores de menor frequência</b> numa só. A raiz nova recebe a <b>soma</b> das frequências.</li>
+  <li>Depois de <b>n - 1 iterações</b>, sobra uma árvore. O código de cada palavra é a sequência de bits (0 à esquerda, 1 à direita) da raiz até a folha dela.</li>
+</ol>
+<div class="sim" id="arvore-sim">
+  <div class="head"><strong>Passo a passo: "para cada rosa rosa, uma rosa é uma rosa"</strong><div class="btns"><button data-a="prev">Voltar</button><button class="pri" data-a="next">Próximo passo</button></div></div>
+  <div class="fig" style="margin:0"><svg></svg></div>
+  <div class="status"></div>
+</div>
+<p>No fim, <b>rosa</b> (a mais frequente) recebe o código mais curto: <code>0</code>.</p>
+</section>
+
+<!-- 6 -->
+<section class="cap" id="canonica">
+<h2><span class="n">6</span>Árvore canônica</h2>
+<p>A árvore de Huffman <b>minimiza o tamanho do arquivo comprimido</b>. Mas não é única: trocar o filho da esquerda pelo da direita em qualquer nó gera outra árvore com <b>a mesma razão de compressão</b>.</p>
+<p>A escolhida é a <b>árvore canônica</b>: aquela em que, em todo nó, <b>a subárvore da direita nunca é mais baixa que a da esquerda</b>. Na prática: os códigos curtos ficam à esquerda e a árvore "cresce para a direita", como na figura do passo anterior.</p>
+<p>A árvore facilita visualizar e sugere métodos simples:</p>
+<ul>
+  <li><b>Codificar:</b> percorre a árvore emitindo os bits das arestas.</li>
+  <li><b>Decodificar:</b> os bits lidos escolhem as arestas até chegar numa folha.</li>
+</ul>
+<div class="box cuidado"><span class="t">Mas tem um problema</span>Guardar e percorrer a árvore é <b>ineficiente em espaço e em tempo</b>. É isso que motiva o próximo algoritmo: ele nem monta a árvore.</div>
+</section>
+
+<!-- 7 -->
+<section class="cap" id="moffat">
+<h2><span class="n">7</span>Algoritmo de Moffat e Katajainen</h2>
+<p>Proposto em 1995, é baseado na codificação canônica e é <b>linear em tempo e em espaço</b>.</p>
+<div class="box ideia"><span class="t">A grande sacada</span>Ele calcula só os <b>comprimentos</b> dos códigos, não os códigos em si. A compressão é a mesma não importa quais códigos sejam usados, desde que os comprimentos sejam os de Huffman. Com os comprimentos em mãos, gerar os códigos é fácil (seção 8).</div>
+<p>A entrada é um vetor <b>A com as frequências em ordem decrescente</b>. Para o exemplo: <code>A = [4, 2, 1, 1, 1, 1]</code> (rosa, uma, para, cada, ",␣", é). Tudo acontece <b>dentro desse mesmo vetor</b>: várias listas lógicas convivem nele, economizando memória.</p>
+<p>O algoritmo tem três fases:</p>
+<div class="grid2">
+  <div class="card"><h4>1. Combinação dos nós</h4><p class="small">Faz o trabalho do Huffman: junta os dois menores, repetidamente. No fim, A[2] tem o peso total da árvore e as outras posições guardam, para cada nó interno, o <b>índice do seu pai</b>.</p></div>
+  <div class="card"><h4>2. Profundidade dos nós internos</h4><p class="small">Troca "índice do pai" por "profundidade": a raiz tem profundidade 0 e cada nó tem a do pai mais 1.</p></div>
+  <div class="card"><h4>3. Profundidade das folhas</h4><p class="small">A partir de quantos nós internos há em cada nível, descobre em que nível fica cada folha. A profundidade da folha é o <b>comprimento do código</b>.</p></div>
+</div>
+
+<h3>Fase 1: combinação dos nós</h3>
+<p>O vetor é percorrido <b>da direita para a esquerda</b> com três marcadores:</p>
+<ul>
+  <li><b>Folha</b>: a próxima folha a ser usada (as menores frequências ficam no fim).</li>
+  <li><b>Raiz</b>: o próximo nó interno a ser usado.</li>
+  <li><b>Prox</b>: a próxima posição livre para guardar um nó interno novo.</li>
+</ul>
+<p>A cada passo, escolhe o menor entre "próxima folha" e "próximo nó interno" (no empate, prefere o nó interno), duas vezes, e soma. Conforme as frequências são combinadas, viram <b>pesos</b>. Quando um nó interno é usado, a posição dele passa a guardar o índice do pai.</p>
+<div class="tw" id="mk-trace"></div>
+<p class="small muted">Traço do exemplo dos slides. Na linha k, A[2] = 10 é o peso da árvore inteira e A[3..6] = 2, 3, 4, 4 são os índices dos pais dos nós internos. A[1] não é usada: uma árvore com n folhas tem n - 1 nós internos.</p>
+<details class="card"><summary><b>Ver o pseudocódigo da fase 1</b> (só para apoio)</summary>
+<div class="formula" style="white-space:pre">PrimeiraFase (A, n)
+{ Raiz = n; Folha = n;
+  for (Prox = n; Prox &gt;= 2; Prox--)
+  { /* Procura posição */
+    if ((não existe Folha) || ((Raiz &gt; Prox) &amp;&amp; (A[Raiz] &lt;= A[Folha])))
+    { A[Prox] = A[Raiz]; A[Raiz] = Prox; Raiz = Raiz - 1; /* nó interno */ }
+    else { A[Prox] = A[Folha]; Folha = Folha - 1; /* nó folha */ }
+    /* Atualiza frequências */
+    if ((não existe Folha) || ((Raiz &gt; Prox) &amp;&amp; (A[Raiz] &lt;= A[Folha])))
+    { A[Prox] = A[Prox] + A[Raiz]; A[Raiz] = Prox; Raiz = Raiz - 1; }
+    else { A[Prox] = A[Prox] + A[Folha]; Folha = Folha - 1; }
+  }
+}</div>
+<p class="small muted">O primeiro <code>if</code> pega o 1º nó da junção; o segundo pega o 2º e soma. <code>A[Raiz] = Prox</code> é o momento em que o nó usado passa a apontar para o pai.</p>
+</details>
+
+<h3>Fase 2: profundidade dos nós internos</h3>
+<p>Agora o vetor é percorrido <b>da esquerda para a direita</b>. A raiz (A[2]) recebe 0. Para cada posição seguinte, a profundidade é a do pai mais 1: <code>A[Prox] = A[A[Prox]] + 1</code>. Funciona porque o pai sempre está à esquerda e já foi convertido.</p>
+<div class="tw"><table><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>
+<tr><td>Fim da fase 1 (pais)</td><td class="mono">/</td><td class="mono">10</td><td class="mono">2</td><td class="mono">3</td><td class="mono">4</td><td class="mono">4</td></tr>
+<tr><td>Fim da fase 2 (profundidades)</td><td class="mono">/</td><td class="mono">0</td><td class="mono">1</td><td class="mono">2</td><td class="mono">3</td><td class="mono">3</td></tr></table></div>
+<p class="small muted">Leitura: a raiz está no nível 0; há um nó interno no nível 1, um no nível 2 e dois no nível 3.</p>
+
+<h3>Fase 3: profundidade das folhas</h3>
+<p>Ideia: num nível h, se há <b>Disp</b> nós disponíveis e <b>u</b> deles são internos, então os outros <b>Disp - u são folhas</b> com código de comprimento h. No nível seguinte, cada nó interno gera 2 filhos: <code>Disp = 2 × u</code>.</p>
+<div class="tw"><table><tr><th>Nível h</th><th>Disp (nós no nível)</th><th>u (internos)</th><th>Folhas nesse nível</th></tr>
+<tr><td>0</td><td>1</td><td>1</td><td>0</td></tr>
+<tr><td>1</td><td>2</td><td>1</td><td><b>1</b> folha com código de 1 bit (rosa)</td></tr>
+<tr><td>2</td><td>2</td><td>1</td><td><b>1</b> folha com código de 2 bits (uma)</td></tr>
+<tr><td>3</td><td>2</td><td>2</td><td>0</td></tr>
+<tr><td>4</td><td>4</td><td>0</td><td><b>4</b> folhas com código de 4 bits</td></tr></table></div>
+<p>Resultado: <code>A = [1, 2, 4, 4, 4, 4]</code>, os comprimentos dos códigos na ordem do vocabulário.</p>
+<details class="card"><summary><b>Ver o pseudocódigo das fases 2 e 3</b> (só para apoio)</summary>
+<div class="formula" style="white-space:pre">SegundaFase (A, n)
+{ A[2] = 0;
+  for (Prox = 3; Prox &lt;= n; Prox++) A[Prox] = A[A[Prox]] + 1;
+}
+
+TerceiraFase (A, n)
+{ Disp = 1; u = 0; h = 0; Raiz = 2; Prox = 1;
+  while (Disp &gt; 0)
+  { while (Raiz &lt;= n &amp;&amp; A[Raiz] == h) { u = u + 1; Raiz = Raiz + 1; }
+    while (Disp &gt; u) { A[Prox] = h; Prox = Prox + 1; Disp = Disp - 1; }
+    Disp = 2 * u; h = h + 1; u = 0;
+  }
+}
+
+CalculaCompCodigo (A, n)
+{ A = PrimeiraFase (A, n);
+  A = SegundaFase (A, n);
+  A = TerceiraFase (A, n);
+}</div>
+<p class="small muted">Na fase 3, o primeiro <code>while</code> conta os internos do nível h (u); o segundo grava h para cada folha do nível (Disp - u vezes).</p>
+</details>
+</section>
+
+<!-- 8 -->
+<section class="cap" id="codigos">
+<h2><span class="n">8</span>Códigos canônicos</h2>
+<p>Propriedades dos códigos canônicos:</p>
+<ul>
+  <li>os comprimentos seguem o algoritmo de Huffman;</li>
+  <li><b>códigos de mesmo comprimento são inteiros consecutivos</b>.</li>
+</ul>
+<p>Com os comprimentos de Moffat e Katajainen, a regra é simples:</p>
+<ol>
+  <li>O primeiro código é só zeros.</li>
+  <li>Cada próximo código é o anterior <b>+ 1</b>; se o comprimento aumentar, desloca para a esquerda (acrescenta zeros no fim) até ter o tamanho certo.</li>
+</ol>
+<div class="tw"><table><tr><th>i</th><th>Símbolo</th><th>Comprimento</th><th>Código canônico</th><th>Como saiu</th></tr>
+<tr><td>1</td><td class="mono">rosa</td><td>1</td><td class="mono">0</td><td>Primeiro: só zeros</td></tr>
+<tr><td>2</td><td class="mono">uma</td><td>2</td><td class="mono">10</td><td>0 + 1 = 1, desloca: 10</td></tr>
+<tr><td>3</td><td class="mono">para</td><td>4</td><td class="mono">1100</td><td>10 + 1 = 11, desloca 2 vezes: 1100</td></tr>
+<tr><td>4</td><td class="mono">cada</td><td>4</td><td class="mono">1101</td><td>+ 1</td></tr>
+<tr><td>5</td><td class="mono">,␣</td><td>4</td><td class="mono">1110</td><td>+ 1</td></tr>
+<tr><td>6</td><td class="mono">é</td><td>4</td><td class="mono">1111</td><td>+ 1</td></tr></table></div>
+<div class="box ideia"><span class="t">Por que isso funciona</span>Nenhum código é <b>prefixo</b> de outro (ex.: nenhum começa com <code>0</code> além de rosa). Assim, lendo os bits em sequência, sempre se sabe onde um código termina.</div>
+</section>
+
+<!-- 9 -->
+<section class="cap" id="basoff">
+<h2><span class="n">9</span>Codificação e decodificação com Base e Offset</h2>
+<p>Como códigos de mesmo comprimento são consecutivos, não é preciso guardar a árvore nem a tabela de códigos. Bastam dois vetores pequenos, com <b>MaxCompCod</b> posições (o tamanho do maior código):</p>
+<div class="grid2">
+  <div class="card"><h4>Base[c]</h4><p class="small">O valor inteiro do <b>1º código</b> com comprimento c.</p><div class="formula" style="font-size:13px">Base[1] = 0
+Base[c] = 2 × (Base[c-1] + w<sub>c-1</sub>)</div><p class="small muted">w<sub>c-1</sub> = quantos códigos têm comprimento c - 1. Somar w pula esses códigos; multiplicar por 2 é acrescentar um bit.</p></div>
+  <div class="card"><h4>Offset[c]</h4><p class="small">O <b>índice no vocabulário</b> da 1ª palavra com comprimento c.</p></div>
+</div>
+<div class="tw"><table><tr><th>c</th><th>Base[c]</th><th>Offset[c]</th><th>Conta da Base</th></tr>
+<tr><td>1</td><td class="mono">0</td><td class="mono">1</td><td>regra inicial</td></tr>
+<tr><td>2</td><td class="mono">2</td><td class="mono">2</td><td>2 × (0 + 1) = 2 → <code>10</code></td></tr>
+<tr><td>3</td><td class="mono">6</td><td class="mono">2</td><td>2 × (2 + 1) = 6 → <code>110</code></td></tr>
+<tr><td>4</td><td class="mono">12</td><td class="mono">3</td><td>2 × (6 + 0) = 12 → <code>1100</code></td></tr></table></div>
+<div class="box cuidado"><span class="t">Detalhe da tabela dos slides</span>Não existe código de comprimento 3, então Offset[3] não é usado para nenhuma palavra. O slide mostra Offset[3] = 2. Se você rodar o "Codifica" à mão para <code>uma</code> (i = 2) com esse valor, o laço avança até c = 3 e dá código errado. Com Offset[3] = 3 (o índice da próxima palavra), funciona. Vale confirmar com o professor qual convenção ele usa.</div>
+<h3>Codificar: índice → código</h3>
+<p>Descobre o comprimento c do código (o maior c cujo Offset ainda é ≤ i) e calcula:</p>
+<div class="formula">Código = i - Offset[c] + Base[c]</div>
+<p>Em palavras: "quantas palavras de comprimento c vêm antes dela" (<code>i - Offset[c]</code>) somado ao 1º código desse comprimento (<code>Base[c]</code>).</p>
+<div class="card"><p style="margin:0">Exemplo: <b>cada</b>, i = 4. O comprimento é 4 e ela é a 2ª palavra de comprimento 4. Código = 4 - 3 + 12 = <b>13</b> = <code>1101</code>.</p></div>
+<h3>Decodificar: bits → índice</h3>
+<p>Lê um bit por vez, montando o código. Enquanto o código, com mais um bit, for <b>maior ou igual à Base do próximo comprimento</b>, ainda não terminou: lê mais um bit. Quando para, usa a conta inversa:</p>
+<div class="formula">i = Código - Base[c] + Offset[c]</div>
+<div class="tw"><table><tr><th>c</th><th>LeBit</th><th>Código</th><th>Código &lt;&lt; 1</th><th>Base[c+1]</th><th>Continua?</th></tr>
+<tr><td>1</td><td>1</td><td class="mono">1</td><td class="mono">10 (2)</td><td class="mono">2</td><td>2 ≥ 2, sim</td></tr>
+<tr><td>2</td><td>1</td><td class="mono">11</td><td class="mono">110 (6)</td><td class="mono">6</td><td>6 ≥ 6, sim</td></tr>
+<tr><td>3</td><td>0</td><td class="mono">110</td><td class="mono">1100 (12)</td><td class="mono">12</td><td>12 ≥ 12, sim</td></tr>
+<tr><td>4</td><td>1</td><td class="mono">1101 (13)</td><td>-</td><td>-</td><td>c = MaxCompCod, para</td></tr></table></div>
+<p>Decodificando <code>1101</code>: i = 13 - 12 + 3 = <b>4</b>, ou seja, <b>cada</b>.</p>
+<details class="card"><summary><b>Ver os pseudocódigos Codifica e Decodifica</b> (só para apoio)</summary>
+<div class="formula" style="white-space:pre">Codifica (Base, Offset, i, MaxCompCod)
+{ c = 1;
+  while ((i &gt;= Offset[c + 1]) &amp;&amp; (c + 1 &lt;= MaxCompCod)) c = c + 1;
+  Codigo = i - Offset[c] + Base[c];
+}
+
+Decodifica (Base, Offset, ArqComprimido, MaxCompCod)
+{ c = 1;
+  Codigo = LeBit (ArqComprimido);
+  while (((Codigo &lt;&lt; 1) &gt;= Base[c + 1]) &amp;&amp; (c + 1 &lt;= MaxCompCod))
+  { Codigo = (Codigo &lt;&lt; 1) | LeBit (ArqComprimido);
+    c = c + 1;
+  }
+  i = Codigo - Base[c] + Offset[c];
+}</div></details>
+</section>
+
+<!-- 10 -->
+<section class="cap" id="processo">
+<h2><span class="n">10</span>O processo completo</h2>
+<h3>Compressão: 3 etapas</h3>
+<div class="grid2">
+  <div class="card"><h4><span class="pill blue">1ª etapa</span> Vocabulário</h4><p class="small">Percorre o texto. Cada palavra é procurada no vocabulário: se existe, soma 1 na frequência; se não, é inserida. Usa uma <b>tabela hash</b> com tratamento de colisão, para inserir e pesquisar em <code>O(1)</code>.</p></div>
+  <div class="card"><h4><span class="pill blue">2ª etapa</span> Códigos</h4><p class="small">Ordena o vocabulário por frequência, calcula os comprimentos (Moffat e Katajainen), constrói <b>Base</b>, <b>Offset</b> e <b>Vocabulário</b> e grava os três no <b>início do arquivo comprimido</b>. A hash é reconstruída lendo o vocabulário do disco.</p></div>
+  <div class="card"><h4><span class="pill blue">3ª etapa</span> Codificação</h4><p class="small">Percorre o texto <b>de novo</b>. Cada palavra é extraída, codificada (Codifica) e o código é gravado no arquivo comprimido.</p></div>
+</div>
+<h3>Descompressão</h3>
+<p>É <b>mais simples</b> que a compressão:</p>
+<ol>
+  <li>Lê Base, Offset e Vocabulário do início do arquivo comprimido.</li>
+  <li>Lê os códigos, decodifica cada um (Decodifica) e grava a palavra correspondente no arquivo texto.</li>
+</ol>
+<details class="card"><summary><b>Ver os pseudocódigos</b> (só para apoio)</summary>
+<div class="formula" style="white-space:pre">Compressao (ArqTexto, ArqComprimido)
+{ /* Primeira etapa */
+  while (!feof (ArqTexto))
+  { Palavra = ExtraiProximaPalavra (ArqTexto);
+    Pos = Pesquisa (Palavra, Vocabulario);
+    if Pos é uma posicao valida
+      Vocabulario[Pos].Freq = Vocabulario[Pos].Freq + 1
+    else Insere (Palavra, Vocabulario);
+  }
+  /* Segunda etapa */
+  Vocabulario = OrdenaPorFrequencia (Vocabulario);
+  Vocabulario = CalculaCompCodigo (Vocabulario, n);
+  ConstroiVetores (Base, Offset, ArqComprimido);
+  Grava (Vocabulario, ArqComprimido);
+  LeVocabulario (Vocabulario, ArqComprimido);
+  /* Terceira etapa */
+  PosicionaPrimeiraPosicao (ArqTexto);
+  while (!feof (ArqTexto))
+  { Palavra = ExtraiProximaPalavra (ArqTexto);
+    Pos = Pesquisa (Palavra, Vocabulario);
+    Codigo = Codifica (Base, Offset, Vocabulario[Pos].Ordem, MaxCompCod);
+    Escreve (ArqComprimido, Codigo);
+  }
+}
+
+Descompressao (ArqTexto, ArqComprimido)
+{ LerVetores (Base, Offset, ArqComprimido);
+  LeVocabulario (Vocabulario, ArqComprimido);
+  while (!feof (ArqComprimido))
+  { i = Decodifica (Base, Offset, ArqComprimido, MaxCompCod);
+    Grava (Vocabulario[i], ArqTexto);
+  }
+}</div></details>
+</section>
+
+<!-- 11 -->
+<section class="cap" id="lab">
+<h2><span class="n">11</span>Laboratório</h2>
+<p>Escreva qualquer frase e veja todo o processo acontecer: símbolos, frequências, comprimentos (calculados com o próprio algoritmo de Moffat e Katajainen), códigos canônicos, Base, Offset e o texto comprimido.</p>
+<div class="sim">
+  <div class="controls"><label class="grow">Texto<textarea rows="3" style="font:15px var(--mono);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);width:100%;resize:vertical">para cada rosa rosa, uma rosa é uma rosa</textarea></label></div>
+  <div class="out"></div>
+  <h4>Uma árvore de Huffman para esse texto</h4>
+  <div class="fig" style="margin:0"><svg></svg></div>
+  <p class="small muted">A árvore mostra a junção dos menores. Os códigos da tabela são os canônicos, gerados só a partir dos comprimentos; com empates, uma árvore pode ter outro formato e mesmo assim gerar a mesma compressão.</p>
+</div>
+</section>
+
+<!-- 12 -->
+<section class="cap" id="resumo">
+<h2><span class="n">12</span>Resumo para a prova</h2>
+<div class="tw"><table>
+<tr><th>Conceito</th><th>Em uma frase</th></tr>
+<tr><td>Compressão</td><td>Representar o texto em menos espaço; ganha em disco, transmissão e busca, paga em processamento.</td></tr>
+<tr><td>Razão de compressão</td><td>Comprimido ÷ original. 100 → 30 bytes = 30%. Menor é melhor.</td></tr>
+<tr><td>Huffman</td><td>Código único e de tamanho variável; frequente = código curto. Caracteres ≈ 60%, palavras ≈ 25%.</td></tr>
+<tr><td>Huffman por palavras</td><td>Vocabulário = tabela de símbolos; duas passadas; espaço simples implícito.</td></tr>
+<tr><td>Árvore de codificação</td><td>De baixo para cima, junta os dois menores; n - 1 iterações; código = caminho até a folha.</td></tr>
+<tr><td>Árvore canônica</td><td>Subárvore direita nunca mais baixa que a esquerda. Mesma compressão, escolha padrão.</td></tr>
+<tr><td>Moffat e Katajainen</td><td>Linear em tempo e espaço; calcula só os comprimentos; 3 fases no mesmo vetor.</td></tr>
+<tr><td>Códigos canônicos</td><td>Mesmo comprimento = inteiros consecutivos; primeiro só zeros; depois +1 e desloca.</td></tr>
+<tr><td>Base e Offset</td><td>Base[c] = 1º código de comprimento c; Offset[c] = índice da 1ª palavra de comprimento c.</td></tr>
+<tr><td>Compressão</td><td>3 etapas: vocabulário com hash, cálculo dos códigos e gravação dos vetores, codificação.</td></tr>
+<tr><td>Descompressão</td><td>Mais simples: lê vetores e vocabulário, decodifica e grava.</td></tr>
+</table></div>
+<div class="next"><a href="casamento.html">← Casamento de cadeias</a><a href="index.html">Início →</a></div>
+</section>
+</main>
+</div>
+<footer>Material de revisão baseado nos slides de Estrutura de Dados II (BCC203), UFOP, Prof. Guilherme Tavares de Assis.</footer>
+
+<script src="algos.js"></script>
+<script src="ui.js"></script>
+<script src="compressao.js"></script>
+</body>
+</html>

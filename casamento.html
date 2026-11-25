@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casamento de Cadeias | ED II</title>
+<meta name="description" content="Casamento de cadeias explicado do zero: força bruta, Boyer-Moore, BMH, BMHS, autômatos e Shift-And exato e aproximado, com código C comentado e simuladores.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <a class="brand" href="index.html">ED II · Revisão</a>
+  <nav><a href="index.html">Início</a><a class="on" href="casamento.html">Casamento de cadeias</a><a href="compressao.html">Compressão de textos</a></nav>
+</div></header>
+
+<div class="layout">
+<aside class="toc"><details open><summary>Sumário</summary><p>Nesta página</p>
+  <a href="#problema">1. O problema</a>
+  <a href="#estrutura">2. Estrutura de dados</a>
+  <a href="#categorias">3. Categorias de algoritmos</a>
+  <a href="#invertido">4. Arquivo invertido</a>
+  <a href="#exato">5. Casamento exato</a>
+  <a href="#forca">6. Força bruta</a>
+  <a href="#bm">7. Boyer-Moore</a>
+  <a href="#bmh">8. BMH</a>
+  <a href="#bmhs">9. BMHS</a>
+  <a href="#automatos">10. Autômatos</a>
+  <a href="#shiftand">11. Shift-And exato</a>
+  <a href="#aproximado">12. Casamento aproximado</a>
+  <a href="#shiftaprox">13. Shift-And aproximado</a>
+  <a href="#resumo">14. Resumo para a prova</a>
+</details></aside>
+
+<main>
+<div class="hero">
+  <p class="eyebrow">Estrutura de Dados II · BCC203</p>
+  <h1>Casamento de Cadeias</h1>
+  <p class="lead">Como achar um pedaço de texto dentro de um texto maior. Do jeito mais ingênuo até os truques com bits. Cada algoritmo tem a ideia, o código em C linha por linha e um simulador para você mexer.</p>
+</div>
+
+<!-- 1 -->
+<section class="cap" id="problema">
+<h2><span class="n">1</span>O problema</h2>
+<p>Uma <b>cadeia</b> é só uma sequência de caracteres. Esses caracteres vêm de um conjunto chamado <b>alfabeto</b>. Numa cadeia de bits, o alfabeto é {0, 1}. Num texto em português, são as letras, os números e a pontuação.</p>
+<p><b>Casamento de cadeias</b> (ou casamento de padrão) é encontrar <b>todas</b> as ocorrências de um padrão dentro de um texto. É o que acontece quando você aperta Ctrl+F.</p>
+<div class="grid2">
+  <div class="card"><h4>Texto T</h4><p class="mono">T[0..n-1]</p><p class="muted small">Tamanho <b>n</b>. É onde se procura.</p></div>
+  <div class="card"><h4>Padrão P</h4><p class="mono">P[0..m-1]</p><p class="muted small">Tamanho <b>m ≤ n</b>. É o que se procura.</p></div>
+  <div class="card"><h4>Alfabeto Σ</h4><p class="mono">Σ = {a, b, ..., z}</p><p class="muted small">Finito, de tamanho <b>c</b>. Os caracteres de P e T saem daqui.</p></div>
+</div>
+<p>Onde isso é usado: editores de texto, sistemas de busca (recuperação de informação) e biologia computacional, procurando trechos em sequências de DNA.</p>
+</section>
+
+<!-- 2 -->
+<section class="cap" id="estrutura">
+<h2><span class="n">2</span>Estrutura de dados</h2>
+<p>Todos os códigos da matéria usam estas definições. Clique nas linhas para ver o que cada uma significa.</p>
+<div class="code" data-code="estrutura"></div>
+<div class="box cuidado"><span class="t">Pegadinha de índice</span>Os slides contam as posições a partir de <b>1</b>, mas o vetor em C começa em <b>0</b>. Por isso, quando o algoritmo pensa na "posição k", o código acessa <code>T[k-1]</code>. Guarde isso: metade das dúvidas nos códigos vem daqui.</div>
+</section>
+
+<!-- 3 -->
+<section class="cap" id="categorias">
+<h2><span class="n">3</span>Categorias de algoritmos</h2>
+<p>O que muda de uma categoria para outra é <b>o que se conhece antes</b> da busca e, portanto, o que dá para preparar (pré-processar).</p>
+<div class="tw"><table>
+<tr><th>Categoria</th><th>O que é conhecido antes</th><th>Tempo</th><th>Espaço</th><th>Exemplo</th></tr>
+<tr><td><b>P e T não pré-processados</b></td><td>Nada</td><td class="mono">O(mn)</td><td class="mono">O(1)</td><td>Algoritmo sequencial, on-line, de tempo real (força bruta)</td></tr>
+<tr><td><b>P pré-processado</b></td><td>O padrão</td><td class="mono">O(n)</td><td class="mono">O(m + c)</td><td>Editores de texto (BMH, Shift-And)</td></tr>
+<tr><td><b>P e T pré-processados</b></td><td>Padrão e texto</td><td class="mono">O(log n)</td><td class="mono">O(n)</td><td>Constrói um <b>índice</b> do texto</td></tr>
+</table></div>
+<p>Na terceira categoria, montar o índice custa caro (pode chegar a O(n) ou O(n log n)), mas compensa quando a base de dados é <b>grande e semiestática</b> (atualizada de tempos em tempos) e recebe muitas buscas. Tipos de índice:</p>
+<ul><li>arquivos invertidos;</li><li>árvores TRIE e árvores PATRICIA;</li><li>arranjos de sufixos.</li></ul>
+<div class="box prova"><span class="t">Para a prova</span>Saiba ligar cada categoria à sua complexidade. O espaço <code>O(m + c)</code> da segunda vem do padrão (m) mais uma tabela com uma entrada por caractere do alfabeto (c).</div>
+</section>
+
+<!-- 4 -->
+<section class="cap" id="invertido">
+<h2><span class="n">4</span>Arquivo invertido</h2>
+<p>É o índice mais usado. Tem duas partes:</p>
+<ul>
+  <li><b>Vocabulário:</b> o conjunto das palavras <b>distintas</b> do texto.</li>
+  <li><b>Ocorrências:</b> para cada palavra, a lista das posições onde ela aparece.</li>
+</ul>
+<div class="card">
+<p class="mono small" style="margin:0 0 6px;white-space:pre;overflow-x:auto">1     7         16    22  26        36       45      53
+Texto exemplo. Texto tem palavras. Palavras exercem fascínio.</p>
+<div class="tw" style="margin-bottom:0"><table><tr><th>Vocabulário</th><th>Ocorrências</th></tr>
+<tr><td>exemplo</td><td class="mono">7</td></tr><tr><td>exercem</td><td class="mono">45</td></tr><tr><td>fascínio</td><td class="mono">53</td></tr>
+<tr><td>palavras</td><td class="mono">26, 36</td></tr><tr><td>tem</td><td class="mono">22</td></tr><tr><td>texto</td><td class="mono">1, 16</td></tr></table></div>
+</div>
+<h3>Quanto espaço ocupa</h3>
+<ul>
+  <li>O <b>vocabulário é pequeno</b>. A <b>lei de Heaps</b> prevê seu tamanho: <code>V = K·n<sup>β</sup> = O(n<sup>β</sup>)</code>, com K entre 10 e 100 e β entre 0 e 1 (na prática, entre 0,4 e 0,6). Ou seja, cresce mais ou menos com a <b>raiz quadrada</b> do tamanho do texto.</li>
+  <li>As <b>ocorrências ocupam muito mais</b>: <code>O(n)</code>, porque cada palavra do texto aparece uma vez em alguma lista. Na prática, de 30% a 40% do tamanho do texto.</li>
+</ul>
+<h3>Como a pesquisa funciona</h3>
+<ol>
+  <li><b>Pesquisa no vocabulário:</b> as palavras da consulta são isoladas e procuradas no vocabulário.</li>
+  <li><b>Recuperação das ocorrências:</b> pega as listas das palavras encontradas.</li>
+  <li><b>Manipulação das ocorrências:</b> processa as listas para tratar frases, proximidade ou operações lógicas (E, OU).</li>
+</ol>
+<p>Como tudo começa pelo vocabulário, ele costuma ficar num arquivo separado, que geralmente <b>cabe na memória principal</b>.</p>
+<div class="grid2">
+  <div class="card"><h4>Palavra simples</h4><p class="small">Qualquer estrutura eficiente serve. <b>Hashing</b> e <b>TRIE</b> custam <code>O(m)</code> (m = tamanho da consulta, não importa o texto). <b>Árvore B</b> custa <code>O(log n)</code>, mas guardar as palavras em ordem é barato e competitivo.</p></div>
+  <div class="card"><h4>Frase</h4><p class="small">Mais difícil. Cada palavra é pesquisada separadamente e as listas são percorridas <b>em sincronia</b>, procurando posições em que as palavras aparecem em sequência.</p></div>
+</div>
+<h3>Exemplo com TRIE</h3>
+<p>Para o texto "Texto tem palavras. Palavras exercem fascínio.", cada palavra lida é pesquisada na TRIE. Se não está lá, é inserida com uma lista nova contendo sua posição. Se já está, a posição nova vai para o fim da lista dela.</p>
+<figure class="fig"><svg id="g-trie" viewBox="0 0 640 250" width="640"></svg><figcaption>O vocabulário vira uma TRIE; cada folha guarda a lista de ocorrências.</figcaption></figure>
+</section>
+
+<!-- 5 -->
+<section class="cap" id="exato">
+<h2><span class="n">5</span>Casamento exato</h2>
+<p>Encontrar as ocorrências <b>exatas</b> do padrão. Os algoritmos se dividem pela forma de procurar:</p>
+<div class="grid2">
+  <div class="card"><h4>Lê o texto um a um</h4><p class="small">Avança caractere por caractere no texto, tentando identificar uma ocorrência.</p><p><span class="pill">Força bruta</span> <span class="pill">Shift-And</span></p></div>
+  <div class="card"><h4>Janela deslizante</h4><p class="small">Encaixa o padrão numa janela do texto e compara <b>da direita para a esquerda</b>, procurando um sufixo da janela que case com um sufixo do padrão. Depois, pula.</p><p><span class="pill">Boyer-Moore</span> <span class="pill">BMH</span> <span class="pill">BMHS</span></p></div>
+</div>
+</section>
+
+<!-- 6 -->
+<section class="cap" id="forca">
+<h2><span class="n">6</span>Força bruta</h2>
+<p>O mais simples de todos: tenta casar o padrão em <b>toda</b> posição do texto. Começa na posição 1, compara letra por letra; se falhar, anda uma casa e recomeça.</p>
+<div class="code" data-code="forca"></div>
+<div class="sim" data-alg="fb">
+  <div class="head"><strong>Simulador: força bruta</strong><span class="pill">compara da esquerda para a direita</span></div>
+  <div class="controls">
+    <label class="grow">Texto<input type="text" name="t" value="aaaaabaab"></label>
+    <label class="grow">Padrão<input type="text" name="p" value="aab"></label>
+    <div class="btns"><button data-a="prev">Voltar</button><button class="pri" data-a="next">Próximo passo</button><button data-a="all">Resumo</button></div>
+  </div>
+  <div class="strip"></div><div class="status"></div>
+</div>
+<h3>Análise</h3>
+<ul>
+  <li><b>Pior caso:</b> <code>C<sub>n</sub> = m × n</code>. Exemplo: P = aab e T = aaaaaaaaaa. Em toda posição, compara quase o padrão inteiro antes de falhar.</li>
+  <li><b>Caso esperado:</b> <code>(c / (c-1)) · (1 - 1/c<sup>m</sup>) · (n - m + 1) + O(1)</code>, bem melhor que o pior caso, porque normalmente a diferença aparece logo no 1º ou 2º caractere.</li>
+  <li>Num experimento de Baeza-Yates (1992), com texto aleatório e alfabeto de tamanho 4, o número esperado de comparações por caractere foi cerca de <b>1,3</b>.</li>
+</ul>
+</section>
+
+<!-- 7 -->
+<section class="cap" id="bm">
+<h2><span class="n">7</span>Boyer-Moore (BM)</h2>
+<p>O algoritmo clássico, de 1977. A ideia que muda tudo: comparar a janela <b>de trás para frente</b>. Se aparecer uma diferença, em vez de andar só uma casa, calcula um <b>deslocamento</b> maior. Se não aparecer diferença, achou uma ocorrência.</p>
+<p>O BM propõe duas heurísticas para calcular o deslocamento. Exemplo dos slides: P = <code>cacbac</code>, T = <code>aabcaccacbac</code>. Na primeira janela, o <code>c</code> do texto (posição 3) colide com o <code>b</code> do padrão.</p>
+<div class="grid2">
+  <div class="card"><h4>Heurística ocorrência</h4><p class="small">Alinha o caractere do texto que causou a colisão com o <b>1º caractere igual a ele no padrão, à esquerda do ponto de colisão</b>.</p><p class="small">No exemplo: a colisão foi com <code>c</code>, então a janela anda até um <code>c</code> do padrão ficar embaixo desse <code>c</code> do texto.</p></div>
+  <div class="card"><h4>Heurística casamento</h4><p class="small">Ao mover o padrão, faz a janela casar com o <b>pedaço do texto que já tinha casado</b> antes da colisão.</p><p class="small">No exemplo: já tinha casado <code>ac</code>; a janela anda até outro <code>ac</code> do padrão ficar embaixo dele.</p></div>
+</div>
+<p>O BM escolhe a heurística que dá o <b>maior deslocamento</b>. O problema: fazer essa escolha custa comparações a cada colisão, o que pesa no tempo. Ao longo dos anos surgiram simplificações, e as melhores usaram <b>só a heurística ocorrência</b>. É daí que vêm o BMH e o BMHS.</p>
+</section>
+
+<!-- 8 -->
+<section class="cap" id="bmh">
+<h2><span class="n">8</span>Boyer-Moore-Horspool (BMH)</h2>
+<p>Em 1980, Horspool simplificou o BM e o deixou mais rápido. Pela implementação simples e eficiência comprovada, o BMH é o indicado para uso geral em casamento exato.</p>
+<div class="box ideia"><span class="t">A ideia em uma frase</span>Qualquer caractere já lido serve para consultar a tabela de deslocamentos. Horspool usa sempre o caractere do texto que está alinhado com o <b>último caractere do padrão</b> (o fim da janela), não importa onde a comparação falhou.</div>
+<h3>Tabela de deslocamentos</h3>
+<ol>
+  <li>Todo caractere começa com deslocamento <b>m</b>.</li>
+  <li>Para os <b>m - 1 primeiros</b> caracteres do padrão: <code>d[x] = m - j</code>, a distância do caractere até o fim do padrão. Se a letra aparece mais de uma vez, fica a <b>menor</b> distância (a ocorrência mais à direita).</li>
+</ol>
+<div class="formula">d[x] = min{ j tal que (j = m) | (1 ≤ j &lt; m  e  P[m - j] = x) }</div>
+<div class="card">
+<p style="margin-top:0">Exemplo: <b>P = teste</b> (m = 5). O último <code>e</code> fica de fora.</p>
+<div class="tw"><table><tr><th>j</th><th>1</th><th>2</th><th>3</th><th>4</th></tr><tr><td>P[j]</td><td class="mono">t</td><td class="mono">e</td><td class="mono">s</td><td class="mono">t</td></tr><tr><td>m - j</td><td class="mono">4</td><td class="mono">3</td><td class="mono">2</td><td class="mono">1</td></tr></table></div>
+<p style="margin-bottom:0">O <code>t</code> aparece duas vezes: vale a menor, 1. Resultado: <code>d[t] = 1</code>, <code>d[e] = 3</code>, <code>d[s] = 2</code> e <code>d[x] = 5</code> para qualquer outro caractere.</p>
+</div>
+<div class="box cuidado"><span class="t">Por que o último caractere fica de fora?</span>Se ele entrasse, teria distância 0 e a janela ficaria parada para sempre quando o fim da janela fosse igual ao fim do padrão.</div>
+<div class="code" data-code="bmh"></div>
+<div class="sim" data-alg="bmh">
+  <div class="head"><strong>Simulador: BMH</strong><span class="pill">salto pelo caractere no fim da janela</span></div>
+  <div class="controls">
+    <label class="grow">Texto<input type="text" name="t" value="os testes testam"></label>
+    <label class="grow">Padrão<input type="text" name="p" value="teste"></label>
+    <div class="btns"><button data-a="prev">Voltar</button><button class="pri" data-a="next">Próximo passo</button><button data-a="all">Resumo</button></div>
+  </div>
+  <p class="small muted" style="margin:0">Tabela de deslocamentos do padrão:</p>
+  <div class="dtab"></div>
+  <div class="strip"></div><div class="status"></div>
+</div>
+</section>
+
+<!-- 9 -->
+<section class="cap" id="bmhs">
+<h2><span class="n">9</span>Boyer-Moore-Horspool-Sunday (BMHS)</h2>
+<p>Em 1990, Sunday propôs uma variante do BMH. A única mudança de ideia: o salto usa o caractere do texto <b>logo depois</b> do último caractere do padrão (o 1º fora da janela).</p>
+<div class="grid2">
+  <div class="card"><h4>BMH</h4><p class="small">Valor inicial: <b>m</b><br>Entram os <b>m - 1</b> primeiros caracteres<br>Salto: <code>m - j</code><br>Consulta: <code>d[T[i-1]]</code>, fim da janela</p></div>
+  <div class="card"><h4>BMHS</h4><p class="small">Valor inicial: <b>m + 1</b><br>Entram <b>todos os m</b> caracteres<br>Salto: <code>m - j + 1</code><br>Consulta: <code>d[T[i]]</code>, depois da janela</p></div>
+</div>
+<div class="formula">d[x] = min{ j tal que (j = m + 1) | (1 ≤ j ≤ m  e  P[m + 1 - j] = x) }</div>
+<div class="card"><p style="margin:0">Exemplo: <b>P = teste</b>. Distâncias contadas a partir da posição depois do padrão: t = 5, e = 4, s = 3, t = 2, e = 1. Ficam as menores: <code>d[t] = 2</code>, <code>d[e] = 1</code>, <code>d[s] = 3</code> e <code>d[x] = 6</code> para os outros.</p></div>
+<div class="code" data-code="bmhs"></div>
+<div class="sim" data-alg="bmhs">
+  <div class="head"><strong>Simulador: BMHS</strong><span class="pill">salto pelo caractere depois da janela</span></div>
+  <div class="controls">
+    <label class="grow">Texto<input type="text" name="t" value="os testes testam"></label>
+    <label class="grow">Padrão<input type="text" name="p" value="teste"></label>
+    <div class="btns"><button data-a="prev">Voltar</button><button class="pri" data-a="next">Próximo passo</button><button data-a="all">Resumo</button></div>
+  </div>
+  <p class="small muted" style="margin:0">Tabela de deslocamentos do padrão:</p>
+  <div class="dtab"></div>
+  <div class="strip"></div><div class="status"></div>
+</div>
+<div class="box prova"><span class="t">Exercício típico</span>"Monte a tabela de deslocamentos do BMH e do BMHS para o padrão X e mostre as janelas até o fim do texto." Treine nos simuladores: digite o padrão, monte a tabela no papel e confira; depois avance passo a passo para conferir cada salto.</div>
+</section>
+
+<!-- 10 -->
+<section class="cap" id="automatos">
+<h2><span class="n">10</span>Autômatos</h2>
+<p>Um autômato é um modelo de computação bem simples: um conjunto de estados ligados por setas com letras. Você lê o texto letra por letra e vai seguindo as setas. Ele é a base para entender o Shift-And.</p>
+<p>Um <b>autômato finito</b> é a tupla <code>(Q, I, F, Σ, T)</code>:</p>
+<ul>
+  <li><b>Q</b>: conjunto finito de estados;</li>
+  <li><b>I</b>: estado inicial (I ∈ Q);</li>
+  <li><b>F</b>: conjunto de estados finais (F ⊆ Q), desenhados com círculo duplo;</li>
+  <li><b>Σ</b>: alfabeto de entrada;</li>
+  <li><b>T</b>: função de transição. Para cada estado e cada símbolo de Σ ∪ {ε}, diz para quais estados se vai. ε é a transição vazia.</li>
+</ul>
+<div class="grid2">
+  <figure class="fig" style="margin:0"><svg id="g-nd" viewBox="0 0 300 200" width="300"></svg><figcaption><b>Não determinista:</b> do estado 0, lendo <code>a</code>, pode ir para 1 ou 3.</figcaption></figure>
+  <figure class="fig" style="margin:0"><svg id="g-d" viewBox="0 0 300 200" width="300"></svg><figcaption><b>Determinista:</b> cada estado e letra levam a um único estado.</figcaption></figure>
+</div>
+<div class="grid2">
+  <div class="card"><h4>Não determinista</h4><p class="small"><code>T(q, α) = {q1, ..., qk}</code> com k &gt; 1 para algum estado, ou existe alguma transição ε. Pode ter <b>vários estados ativos</b> ao mesmo tempo. Casamento aproximado é resolvido com esse tipo.</p></div>
+  <div class="card"><h4>Determinista</h4><p class="small"><code>T(q, α) = {q1}</code>: para cada caractere, um único destino. Tem <b>no máximo um estado ativo</b> por vez.</p></div>
+</div>
+<h3>Conceitos que caem</h3>
+<ul>
+  <li><b>Cadeia reconhecida:</b> existe um caminho do estado inicial até um estado final rotulado com ela.</li>
+  <li><b>Linguagem reconhecida:</b> o conjunto de cadeias que o autômato reconhece. Nos autômatos acima: {a} e {abc} (no da direita, {d} e {abc}).</li>
+  <li><b>Estado ativo:</b> se a cadeia x leva de I até q, então q está ativo depois de ler x.</li>
+  <li><b>Transições vazias (ε):</b> andam sem ler caractere. Simplificam a construção, e sempre existe um autômato equivalente sem elas.</li>
+  <li><b>Acíclico</b> (sem ciclos) e <b>cíclico</b> (com ciclos). Cíclicos são úteis para expressões regulares e podem reconhecer linguagens infinitas, como {ba, bba, bbba, ...}.</li>
+</ul>
+<h3>Buscar um padrão é simular um autômato</h3>
+<p>O autômato determinista abaixo reconhece <b>P = aabc</b> com Σ = {a, b, c}. Começa no estado 0; para cada caractere do texto, segue a seta. Chegou no estado 4: achou <code>aabc</code>. Cada caractere é lido uma vez, então o tempo é <code>O(n)</code>. O espaço é <code>m + 1</code> vértices e <code>|Σ| × m</code> arestas.</p>
+<div class="tw"><table><tr><th>Estado (o que já casou)</th><th>lendo a</th><th>lendo b</th><th>lendo c</th></tr>
+<tr><td>0 (nada)</td><td class="mono">1</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td>1 (a)</td><td class="mono">2</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td>2 (aa)</td><td class="mono">2</td><td class="mono">3</td><td class="mono">0</td></tr>
+<tr><td>3 (aab)</td><td class="mono">1</td><td class="mono">0</td><td class="mono"><b>4</b> (final)</td></tr></table></div>
+<p class="small muted">Repare no estado 2 lendo <code>a</code>: "aaa" termina em "aa", então continua no 2. E no estado 3 lendo <code>a</code>: "aaba" termina em "a", volta para o 1.</p>
+</section>
+
+<!-- 11 -->
+<section class="cap" id="shiftand">
+<h2><span class="n">11</span>Shift-And exato</h2>
+<p>O Shift-And usa <b>paralelismo de bit</b>: guarda vários valores lado a lado dentro de uma única palavra do computador (um <code>long</code>) e atualiza todos de uma vez com uma operação de bits.</p>
+<h3>As operações de bits</h3>
+<div class="tw"><table><tr><th>Notação</th><th>Significado</th><th>Exemplo</th></tr>
+<tr><td class="mono">0 1<sup>3</sup></td><td>Repetição (exponenciação)</td><td class="mono">01<sup>3</sup> = 0111 · 10<sup>4</sup> = 10000</td></tr>
+<tr><td class="mono">|</td><td>OU bit a bit</td><td class="mono">1010 | 0110 = 1110</td></tr>
+<tr><td class="mono">&amp;</td><td>E bit a bit</td><td class="mono">1010 &amp; 0110 = 0010</td></tr>
+<tr><td class="mono">&gt;&gt;</td><td>Desloca para a direita, entra 0 à esquerda</td><td class="mono">b1 b2 ... bc &gt;&gt; 2 = 0 0 b1 ... b(c-2)</td></tr>
+</table></div>
+<h3>A ideia</h3>
+<p>O algoritmo mantém o conjunto de <b>todos os prefixos do padrão que casam com o final do texto já lido</b>. Esse conjunto é a máscara <code>R = (b1 b2 ... bm)</code>:</p>
+<div class="box ideia"><span class="t">O que significa cada bit</span><code>bj = 1</code> se e somente se os <b>j primeiros</b> caracteres do padrão (p1 ... pj) são iguais aos <b>últimos j</b> caracteres lidos do texto. Quando <b>bm</b> (o último bit) liga, o padrão inteiro casou.</div>
+<p>Isso é exatamente simular o autômato <b>não determinista</b> que reconhece os prefixos do padrão: cada bit de R é um estado, e bit 1 é estado ativo. O laço Σ no estado 0 significa que um casamento novo pode começar a qualquer momento.</p>
+<figure class="fig"><svg id="g-prefixo" viewBox="0 0 640 120" width="640"></svg><figcaption>Autômato que reconhece os prefixos de P = teste.</figcaption></figure>
+<h3>Passo 1: as máscaras M (pré-processamento)</h3>
+<p>Para cada caractere do padrão, uma máscara com 1 nas posições em que ele aparece. Para <b>P = teste</b>:</p>
+<div class="tw"><table><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+<tr><td class="mono">M[t]</td><td class="mono bit1">1</td><td class="mono">0</td><td class="mono">0</td><td class="mono bit1">1</td><td class="mono">0</td></tr>
+<tr><td class="mono">M[e]</td><td class="mono">0</td><td class="mono bit1">1</td><td class="mono">0</td><td class="mono">0</td><td class="mono bit1">1</td></tr>
+<tr><td class="mono">M[s]</td><td class="mono">0</td><td class="mono">0</td><td class="mono bit1">1</td><td class="mono">0</td><td class="mono">0</td></tr></table></div>
+<p>M[t] = 10010 porque o <code>t</code> aparece nas posições 1 e 4. Qualquer caractere fora do padrão tem máscara 00000.</p>
+<h3>Passo 2: a pesquisa</h3>
+<p><code>R</code> começa com <code>0<sup>m</sup></code>. Para cada caractere lido do texto:</p>
+<div class="formula">R' = ((R &gt;&gt; 1) | 10<sup>m-1</sup>) &amp; M[T[i]]</div>
+<div class="grid2">
+  <div class="card"><h4>R &gt;&gt; 1</h4><p class="small">Cada prefixo que casava "tenta crescer" uma letra: o bit j vai para a posição j + 1.</p></div>
+  <div class="card"><h4>| 10<sup>m-1</sup></h4><p class="small">Liga o 1º bit. A cadeia vazia ε também é sufixo, então um casamento pode começar em qualquer posição.</p></div>
+  <div class="card"><h4>&amp; M[T[i]]</h4><p class="small">Filtra: só fica o prefixo j + 1 se a letra lida for igual a p<sub>j+1</sub>.</p></div>
+</div>
+<p>Com paralelismo de bit, a nova máscara sai em <code>O(1)</code>. Logo, a pesquisa toda custa <code>O(n)</code>, desde que o padrão caiba em poucas palavras do computador.</p>
+<div class="code" data-code="shiftand"></div>
+<div class="sim" data-alg="exato">
+  <div class="head"><strong>Simulador: tabela do Shift-And exato</strong><span class="pill">igual à tabela dos slides</span></div>
+  <div class="controls">
+    <label class="grow">Texto<input type="text" name="t" value="os testes "></label>
+    <label class="grow">Padrão<input type="text" name="p" value="teste"></label>
+  </div>
+  <div class="out"></div>
+</div>
+<div class="box prova"><span class="t">Exercício típico</span>"Mostre a tabela do Shift-And para P em T." Monte as máscaras primeiro. Depois, linha a linha: desloque R, ligue o 1º bit e faça E com a máscara da letra lida. Bit final ligado = casamento.</div>
+</section>
+
+<!-- 12 -->
+<section class="cap" id="aproximado">
+<h2><span class="n">12</span>Casamento aproximado</h2>
+<p>Agora o padrão pode aparecer <b>com erros</b>. São três tipos de operação:</p>
+<div class="grid2">
+  <div class="card"><h4><span class="pill blue">Inserção</span></h4><p class="small">Um caractere a mais no meio. <code>tes te</code>: espaço inserido entre o 3º e o 4º caractere.</p></div>
+  <div class="card"><h4><span class="pill">Substituição</span></h4><p class="small">Um caractere trocado. <code>testa</code>: o último caractere virou <code>a</code>.</p></div>
+  <div class="card"><h4><span class="pill bad">Retirada</span></h4><p class="small">Um caractere a menos. <code>este</code>: o 1º caractere foi retirado.</p></div>
+</div>
+<h3>Distância de edição</h3>
+<p><code>ed(P, P')</code> é o <b>menor número de operações</b> para transformar P em P' (ou o contrário). Exemplo: <code>ed(teste, estende) = 4</code>: retira o primeiro <code>t</code> e insere <code>nde</code> no fim.</p>
+<p>O problema formal: achar todas as ocorrências de P' no texto com <code>ed(P, P') ≤ k</code>, onde <b>k</b> é o limite de erros.</p>
+<ul>
+  <li>Só faz sentido para <code>0 &lt; k &lt; m</code>. Com k = m, qualquer trecho de tamanho m vira P trocando os m caracteres. Com k = 0, é casamento exato.</li>
+  <li><b>Nível de erro</b>: <code>α = k / m</code>, a fração do padrão que pode mudar. Em geral, α &lt; 1/2.</li>
+  <li>É modelado com <b>autômatos não deterministas</b>, e os algoritmos usam paralelismo de bit.</li>
+</ul>
+<h3>O autômato com erros</h3>
+<p>Cada linha do autômato é um número de erros. Pular de uma linha para a de baixo gasta um erro. Ligue e desligue cada tipo de aresta:</p>
+<div class="controls" id="aut-ops">
+  <label class="chk"><input type="checkbox" name="ins" checked> <span class="pill blue">Inserção</span> vertical</label>
+  <label class="chk"><input type="checkbox" name="sub"> <span class="pill">Substituição</span> diagonal cheia</label>
+  <label class="chk"><input type="checkbox" name="ret"> <span class="pill bad">Retirada</span> diagonal tracejada</label>
+</div>
+<figure class="fig"><svg id="g-aprox" viewBox="0 0 640 230" width="640"></svg><figcaption>P = teste com k = 1. Linha de cima: zero erros. Linha de baixo: um erro.</figcaption></figure>
+<div class="tw"><table><tr><th>Aresta</th><th>Operação</th><th>Anda no texto?</th><th>Anda no padrão?</th></tr>
+<tr><td>Horizontal</td><td>Casamento de caractere</td><td>Sim</td><td>Sim</td></tr>
+<tr><td>Vertical (Σ)</td><td>Inserção</td><td>Sim</td><td>Não</td></tr>
+<tr><td>Diagonal cheia (Σ)</td><td>Substituição</td><td>Sim</td><td>Sim</td></tr>
+<tr><td>Diagonal tracejada (ε)</td><td>Retirada</td><td>Não (transição vazia)</td><td>Sim</td></tr></table></div>
+<p>Para k = 2, empilha-se uma terceira linha. Linha 1: exato (k = 0). Linha 2: um erro. Linha 3: dois erros.</p>
+</section>
+
+<!-- 13 -->
+<section class="cap" id="shiftaprox">
+<h2><span class="n">13</span>Shift-And aproximado</h2>
+<p>Simula o autômato com erros usando paralelismo de bit. Cada <b>linha</b> do autômato vira uma máscara: <code>R<sub>0</sub></code> (exato), <code>R<sub>1</sub></code> (um erro), ..., <code>R<sub>k</sub></code> (k erros). São <code>k + 1</code> máscaras.</p>
+<h3>Inicialização</h3>
+<div class="formula">R<sub>0</sub> = 0<sup>m</sup>
+R<sub>j</sub> = 1<sup>j</sup>0<sup>m-j</sup>     (0 &lt; j ≤ k)</div>
+<h3>Atualização para cada caractere lido</h3>
+<div class="formula">R'<sub>0</sub> = ((R<sub>0</sub> &gt;&gt; 1) | 10<sup>m-1</sup>) &amp; M[T[i]]
+R'<sub>j</sub> = ((R<sub>j</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>j-1</sub> | (R<sub>j-1</sub> &gt;&gt; 1) | (R'<sub>j-1</sub> &gt;&gt; 1) | 10<sup>m-1</sup></div>
+<div class="tw"><table><tr><th>Pedaço da fórmula</th><th>Aresta do autômato</th><th>Operação</th></tr>
+<tr><td class="mono">(R<sub>j</sub> &gt;&gt; 1) &amp; M[T[i]]</td><td>Horizontal</td><td>Casa um caractere no mesmo nível</td></tr>
+<tr><td class="mono">R<sub>j-1</sub></td><td>Vertical</td><td><span class="pill blue">Inserção</span></td></tr>
+<tr><td class="mono">R<sub>j-1</sub> &gt;&gt; 1</td><td>Diagonal cheia</td><td><span class="pill">Substituição</span></td></tr>
+<tr><td class="mono">R'<sub>j-1</sub> &gt;&gt; 1</td><td>Diagonal tracejada</td><td><span class="pill bad">Retirada</span> (usa o valor <b>novo</b>, pois não lê caractere)</td></tr></table></div>
+<div class="box cuidado"><span class="t">Atenção: R antigo ou R novo?</span>Inserção e substituição usam <b>R<sub>j-1</sub></b> (antes de ler o caractere). A retirada usa <b>R'<sub>j-1</sub></b> (já atualizado), porque é uma transição vazia: acontece no mesmo instante, sem consumir texto.</div>
+<p>Nos exemplos dos slides, os exercícios escolhem quais erros valem. Só inserção (k = 1):</p>
+<div class="formula">R'<sub>1</sub> = ((R<sub>1</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>0</sub> | 10<sup>m-1</sup></div>
+<p>Inserção, substituição e retirada (k = 1):</p>
+<div class="formula">R'<sub>1</sub> = ((R<sub>1</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>0</sub> | (R<sub>0</sub> &gt;&gt; 1) | (R'<sub>0</sub> &gt;&gt; 1) | 10<sup>m-1</sup></div>
+<div class="sim" data-alg="aprox">
+  <div class="head"><strong>Simulador: tabela do Shift-And aproximado (k = 1)</strong><span class="pill">reproduz os slides 51 e 53</span></div>
+  <div class="controls">
+    <label class="grow">Texto<input type="text" name="t" value="os testes testam"></label>
+    <label class="grow">Padrão<input type="text" name="p" value="teste"></label>
+  </div>
+  <div class="controls">
+    <label class="chk"><input type="checkbox" name="ins" checked> Inserção</label>
+    <label class="chk"><input type="checkbox" name="sub"> Substituição</label>
+    <label class="chk"><input type="checkbox" name="ret"> Retirada</label>
+  </div>
+  <div class="out"></div>
+</div>
+<h3>O código</h3>
+<div class="code" data-code="aprox"></div>
+</section>
+
+<!-- 14 -->
+<section class="cap" id="resumo">
+<h2><span class="n">14</span>Resumo para a prova</h2>
+<div class="tw"><table>
+<tr><th>Algoritmo</th><th>Como procura</th><th>Pré-processamento</th><th>Custo</th><th>Marca registrada</th></tr>
+<tr><td><b>Força bruta</b></td><td>Toda posição, esquerda para direita</td><td>Nenhum</td><td class="mono">O(mn) pior</td><td>Anda 1 casa sempre</td></tr>
+<tr><td><b>Boyer-Moore</b></td><td>Janela, direita para esquerda</td><td>Duas heurísticas</td><td>Caro por colisão</td><td>Ocorrência e casamento, usa o maior salto</td></tr>
+<tr><td><b>BMH</b></td><td>Janela, direita para esquerda</td><td>Tabela d (m, só m - 1 caracteres)</td><td class="mono">rápido na prática</td><td>Salta por <code>T[i-1]</code>, fim da janela</td></tr>
+<tr><td><b>BMHS</b></td><td>Janela, direita para esquerda</td><td>Tabela d (m + 1, todos os m)</td><td class="mono">rápido na prática</td><td>Salta por <code>T[i]</code>, depois da janela</td></tr>
+<tr><td><b>Shift-And exato</b></td><td>Lê o texto um a um</td><td>Máscaras M</td><td class="mono">O(n)</td><td><code>R' = ((R&gt;&gt;1) | 10<sup>m-1</sup>) &amp; M</code></td></tr>
+<tr><td><b>Shift-And aproximado</b></td><td>Lê o texto um a um</td><td>Máscaras M</td><td class="mono">O(kn)</td><td>k + 1 máscaras, uma por nível de erro</td></tr>
+</table></div>
+<div class="box prova"><span class="t">Checklist</span>
+<ul style="margin:6px 0 0">
+<li>Sei montar a tabela d do BMH e do BMHS de cabeça?</li>
+<li>Sei dizer qual caractere decide o salto em cada um?</li>
+<li>Sei montar as máscaras M e preencher a tabela do Shift-And linha a linha?</li>
+<li>Sei qual pedaço da fórmula aproximada é inserção, substituição e retirada?</li>
+<li>Sei explicar cada linha dos códigos em C (inclusive os <code>-1</code> de índice)?</li>
+</ul></div>
+<div class="next"><a href="index.html">← Início</a><a href="compressao.html">Compressão de textos →</a></div>
+</section>
+</main>
+</div>
+<footer>Material de revisão baseado nos slides de Estrutura de Dados II (BCC203), UFOP, Prof. Guilherme Tavares de Assis.</footer>
+
+<script src="algos.js"></script>
+<script src="codes.js"></script>
+<script src="graph.js"></script>
+<script src="ui.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const G = Graph.draw, $ = s => document.querySelector(s);
+  // Autômatos simples
+  const base = [{ id: 0, x: 50, y: 50 }, { id: 1, x: 110, y: 150 }, { id: 2, x: 220, y: 150 }, { id: 3, x: 250, y: 50, final: true }];
+  G($('#g-nd'), base, [{ from: 0, to: 3, label: 'a' }, { from: 0, to: 1, label: 'a', off: [-12, 0] }, { from: 1, to: 2, label: 'b', off: [0, 18] }, { from: 2, to: 3, label: 'c', off: [12, 0] }]);
+  G($('#g-d'), base, [{ from: 0, to: 3, label: 'd' }, { from: 0, to: 1, label: 'a', off: [-12, 0] }, { from: 1, to: 2, label: 'b', off: [0, 18] }, { from: 2, to: 3, label: 'c', off: [12, 0] }]);
+  // Prefixos de teste
+  const P = 'teste';
+  const chain = y => [...Array(6)].map((_, i) => ({ id: 'a' + i, label: i, x: 50 + i * 108, y, final: i === 5 }));
+  G($('#g-prefixo'), chain(80), [{ from: 'a0', to: 'a0', loop: true, label: 'Σ' }, ...[...P].map((c, i) => ({ from: 'a' + i, to: 'a' + (i + 1), label: c }))]);
+  // TRIE do arquivo invertido
+  const trie = [
+    { id: 'r', label: '', x: 40, y: 125 }, { id: 'e', label: '', x: 150, y: 40 }, { id: 'ex', label: '', x: 260, y: 40 }, { id: 'exe', label: '', x: 370, y: 40 },
+    { id: 't', label: '', x: 150, y: 210 }, { id: 'te', label: '', x: 260, y: 210 }];
+  const svgT = $('#g-trie');
+  G(svgT, trie, [{ from: 'r', to: 'e', label: 'e' }, { from: 'e', to: 'ex', label: 'x' }, { from: 'ex', to: 'exe', label: 'e' }, { from: 'r', to: 't', label: 't', off: [-8, 4] }, { from: 't', to: 'te', label: 'e' }]);
+  const leaf = (x, y, txt, lx, ly) => {
+    const NS = 'http://www.w3.org/2000/svg';
+    const l = document.createElementNS(NS, 'line'); Object.entries({ x1: lx, y1: ly, x2: x, y2: y + 13, class: 'edge' }).forEach(([k, v]) => l.setAttribute(k, v)); svgT.appendChild(l);
+    const r = document.createElementNS(NS, 'rect'); Object.entries({ x, y, width: txt.length * 8.6 + 14, height: 26, rx: 6, class: 'leaf' }).forEach(([k, v]) => r.setAttribute(k, v)); svgT.appendChild(r);
+    const t = document.createElementNS(NS, 'text'); Object.entries({ x: x + 7, y: y + 17, class: 'elbl', style: 'text-anchor:start;fill:var(--text)' }).forEach(([k, v]) => t.setAttribute(k, v)); t.textContent = txt; svgT.appendChild(t);
+  };
+  leaf(450, 4, 'exemplo: 7', 388, 34); leaf(450, 52, 'exercem: 45', 388, 46);
+  leaf(150, 92, 'fascínio: 53', 58, 120); leaf(150, 132, 'palavras: 26, 36', 58, 130);
+  leaf(340, 172, 'tem: 22', 278, 204); leaf(340, 218, 'texto: 1, 16', 278, 216);
+  // Autômato aproximado
+  function aprox() {
+    const ops = Object.fromEntries([...document.querySelectorAll('#aut-ops input')].map(i => [i.name, i.checked]));
+    const nodes = [...chain(60), ...[1, 2, 3, 4, 5].map(i => ({ id: 'b' + i, label: i, x: 50 + i * 108, y: 190, final: i === 5 }))];
+    const edges = [{ from: 'a0', to: 'a0', loop: true, label: 'Σ' }, ...[...P].map((c, i) => ({ from: 'a' + i, to: 'a' + (i + 1), label: c }))];
+    [...P].slice(1).forEach((c, i) => edges.push({ from: 'b' + (i + 1), to: 'b' + (i + 2), label: c }));
+    for (let i = 1; i <= 5; i++) if (ops.ins) edges.push({ from: 'a' + i, to: 'b' + i, label: 'Σ', cls: 'ins', off: [10, 0] });
+    for (let i = 0; i < 5; i++) {
+      if (ops.sub) edges.push({ from: 'a' + i, to: 'b' + (i + 1), label: 'Σ', cls: 'sub', bend: -14 });
+      if (ops.ret) edges.push({ from: 'a' + i, to: 'b' + (i + 1), label: 'ε', cls: 'ret', bend: 14 });
+    }
+    G($('#g-aprox'), nodes, edges);
+  }
+  document.querySelectorAll('#aut-ops input').forEach(i => (i.onchange = aprox));
+  aprox();
+});
+</script>
+</body>
+</html>
