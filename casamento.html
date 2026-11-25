@@ -148,7 +148,7 @@ Texto exemplo. Texto tem palavras. Palavras exercem fascínio.</p>
 <section class="cap" id="bm">
 <h2><span class="n">7</span>Boyer-Moore (BM)</h2>
 <p>O algoritmo clássico, de 1977. A ideia que muda tudo: comparar a janela <b>de trás para frente</b>. Se aparecer uma diferença, em vez de andar só uma casa, calcula um <b>deslocamento</b> maior. Se não aparecer diferença, achou uma ocorrência.</p>
-<p>O BM propõe duas heurísticas para calcular o deslocamento. Exemplo dos slides: P = <code>cacbac</code>, T = <code>aabcaccacbac</code>. Na primeira janela, o <code>c</code> do texto (posição 3) colide com o <code>b</code> do padrão.</p>
+<p>O BM propõe duas heurísticas para calcular o deslocamento. Exemplo dos slides: P = <code>cacbac</code>, T = <code>aabcaccacbac</code>. Na primeira janela, o <code>c</code> do texto (posição 4) colide com o <code>b</code> do padrão.</p>
 <div class="grid2">
   <div class="card"><h4>Heurística ocorrência</h4><p class="small">Alinha o caractere do texto que causou a colisão com o <b>1º caractere igual a ele no padrão, à esquerda do ponto de colisão</b>.</p><p class="small">No exemplo: a colisão foi com <code>c</code>, então a janela anda até um <code>c</code> do padrão ficar embaixo desse <code>c</code> do texto.</p></div>
   <div class="card"><h4>Heurística casamento</h4><p class="small">Ao mover o padrão, faz a janela casar com o <b>pedaço do texto que já tinha casado</b> antes da colisão.</p><p class="small">No exemplo: já tinha casado <code>ac</code>; a janela anda até outro <code>ac</code> do padrão ficar embaixo dele.</p></div>
@@ -382,6 +382,7 @@ R'<sub>j</sub> = ((R<sub>j</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>j-1</sub> | 
     <label class="chk"><input type="checkbox" name="ret"> Retirada</label>
   </div>
   <div class="out"></div>
+  <p class="small muted" style="margin:0">Nos slides 51 e 53, a linha do espaço depois de "testes" mostra <code>10000</code> na 1ª coluna. A conta certa é <code>(00100 &gt;&gt; 1) | 10000 = 10010</code>, como no slide 39; o R'<sub>0</sub> dá <code>00000</code> do mesmo jeito.</p>
 </div>
 <h3>Como preencher uma linha da tabela à mão</h3>
 <p>A questão típica dá a tabela com as colunas <b>(R<sub>0</sub> &gt;&gt; 1) | 10<sup>m-1</sup></b>, <b>R'<sub>0</sub></b>, <b>R<sub>1</sub> &gt;&gt; 1</b> e <b>R'<sub>1</sub></b>. Use sempre os valores da <b>linha de cima</b> como R<sub>0</sub> e R<sub>1</sub> (na 1ª linha: R<sub>0</sub> = 0<sup>m</sup> e R<sub>1</sub> = 10<sup>m-1</sup>).</p>
@@ -410,6 +411,7 @@ R'<sub>j</sub> = ((R<sub>j</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>j-1</sub> | 
 <tr><td>Sempre</td><td class="mono">(R<sub>j</sub> &gt;&gt; 1) &amp; M</td><td class="mono">(R[j] &gt;&gt; 1) &amp; Masc[T[i]]</td><td>casamento normal, nunca sai</td></tr>
 <tr><td>Sempre</td><td class="mono">10<sup>m-1</sup></td><td class="mono">Ri</td><td>nunca sai</td></tr></table></div>
 <p>O código do slide junta substituição e retirada num termo só: <code>((Rant | Rnovo) &gt;&gt; 1)</code> é o mesmo que <code>(Rant &gt;&gt; 1) | (Rnovo &gt;&gt; 1)</code>. Ao alterar, separe os dois para tirar só o que precisa.</p>
+<p class="small muted">Onde fica o <code>Ri</code>: no slide 55 ele entra depois, em <code>R[j] = Rnovo | Ri</code>; no código da tutoria (e nas linhas abaixo) ele já vai dentro do <code>Rnovo</code>, e a atribuição fica só <code>R[j] = Rnovo</code>. Os dois jeitos funcionam; só não esqueça o <code>Ri</code> em nenhum dos dois lugares.</p>
 <div class="tw"><table><tr><th>Pedido</th><th>Linha do Rnovo dentro do laço de j</th></tr>
 <tr><td>Só inserção</td><td class="mono">((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | Rant | Ri</td></tr>
 <tr><td>Só substituição</td><td class="mono">((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | (Rant &gt;&gt; 1) | Ri</td></tr>

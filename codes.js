@@ -101,7 +101,7 @@ window.CODES = {
   },
 
   shiftand: {
-    intro: '<p><b>Resumo:</b> monta uma máscara de bits para cada caractere do padrão e, para cada caractere lido do texto, atualiza <code>R</code> com uma única conta: deslocar, ligar o 1º bit e fazer AND com a máscara.</p><p class="small muted">Versão em C escrita no mesmo estilo do Shift-And aproximado dos slides (o slide 40 traz a versão em pseudocódigo).</p>',
+    intro: '<p><b>Resumo:</b> monta uma máscara de bits para cada caractere do padrão e, para cada caractere lido do texto, atualiza <code>R</code> com uma única conta: deslocar, ligar o 1º bit e fazer AND com a máscara.</p><p class="small muted">Versão em C escrita no mesmo estilo do Shift-And aproximado dos slides (os slides 37 e 38 trazem as máscaras e a fórmula).</p>',
     lines: [
       ['void ShiftAndExato(TipoTexto T, long n, TipoPadrao P, long m)', 'assin'],
       ['{ long Masc[MAXCHAR], i, R = 0;', 'vars'],

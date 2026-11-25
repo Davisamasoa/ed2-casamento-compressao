@@ -344,7 +344,7 @@ for (i = 0; i &lt; n; i++) {
 <details class="sol"><summary>Ver resolução</summary>
 <p>Máscaras: <code>M[a] = 1001</code>, <code>M[b] = 0100</code>, <code>M[r] = 0010</code>, demais = <code>0000</code>.</p>
 <div data-shiftand data-t="abracadabra" data-p="abra"></div>
-<p class="small">Repare que <code>a</code> aparece no início e no fim do padrão: depois do casamento na posição 1, o último <code>a</code> já liga de novo o 1º bit, permitindo um novo casamento logo em seguida.</p>
+<p class="small">Repare que <code>a</code> aparece no início e no fim do padrão: no casamento que termina na posição 4, o mesmo <code>a</code> já liga de novo o 1º bit (R' = 1001). Isso permitiria uma ocorrência sobreposta (como em "abrabra"); aqui o <code>c</code> seguinte zera tudo, e o próximo casamento só vem na posição 8.</p>
 </details>
 </section>
 

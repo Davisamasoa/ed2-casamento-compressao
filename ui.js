@@ -145,7 +145,11 @@
       render();
     }
     function render() {
-      if (!steps.length) { strip.innerHTML = ''; status.textContent = 'O padrão precisa ser menor ou igual ao texto.'; return; }
+      if (!steps.length) {
+        strip.innerHTML = ''; status.textContent = P ? 'O padrão precisa ser menor ou igual ao texto.' : 'Digite um padrão.';
+        bPrev.disabled = bNext.disabled = bAll.disabled = true; return;
+      }
+      bAll.disabled = false;
       const st = steps[cur];
       const comps = st.comps.slice(0, sub);
       const cmap = {}; comps.forEach(c => (cmap[c.t] = c.ok ? 'ok' : 'bad'));
@@ -203,7 +207,8 @@
       const achados = steps.filter(s => s.found).map(s => s.pos + 1);
       const comps = steps.reduce((a, s) => a + s.comps.length, 0);
       cur = steps.length - 1; sub = steps[cur].comps.length; render();
-      status.innerHTML = `<b>Resumo:</b> ${steps.length} posições da janela, ${comps} comparações de caracteres. ` +
+      const pl = (q, um, varios) => `${q} ${q === 1 ? um : varios}`;
+      status.innerHTML = `<b>Resumo:</b> ${pl(steps.length, 'posição', 'posições')} da janela, ${pl(comps, 'comparação', 'comparações')} de caracteres. ` +
         (achados.length ? `${achados.length > 1 ? 'Casamentos nas posições' : 'Casamento na posição'} <b>${achados.join(', ')}</b>.` : 'Nenhum casamento.');
     };
     inT.oninput = inP.oninput = reset;
