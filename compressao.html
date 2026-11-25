@@ -156,7 +156,10 @@
 <div class="tw" id="mk-trace"></div>
 <p class="small muted">Traço do exemplo dos slides. Na linha k, A[2] = 10 é o peso da árvore inteira e A[3..6] = 2, 3, 4, 4 são os índices dos pais dos nós internos. A[1] não é usada: uma árvore com n folhas tem n - 1 nós internos.</p>
 <details class="card"><summary><b>Ver o pseudocódigo da fase 1</b> (só para apoio)</summary>
-<div class="formula" style="white-space:pre">PrimeiraFase (A, n)
+<div class="formula" style="white-space:pre">/* A: frequências em ordem decrescente   n: nº de palavras */
+/* Folha: próxima folha   Raiz: próximo nó interno */
+/* Prox: posição livre para o nó novo */
+PrimeiraFase (A, n)
 { Raiz = n; Folha = n;
   for (Prox = n; Prox &gt;= 2; Prox--)
   { /* Procura posição */
@@ -189,7 +192,11 @@
 <tr><td>4</td><td>4</td><td>0</td><td><b>4</b> folhas com código de 4 bits</td></tr></table></div>
 <p>Resultado: <code>A = [1, 2, 4, 4, 4, 4]</code>, os comprimentos dos códigos na ordem do vocabulário.</p>
 <details class="card"><summary><b>Ver o pseudocódigo das fases 2 e 3</b> (só para apoio)</summary>
-<div class="formula" style="white-space:pre">SegundaFase (A, n)
+<div class="formula" style="white-space:pre">/* A: vetor da fase anterior   n: nº de palavras */
+/* Disp: nós disponíveis no nível   u: nós internos no nível */
+/* h: nível atual   Raiz: próximo nó interno lido */
+/* Prox: posição do vetor sendo preenchida */
+SegundaFase (A, n)
 { A[2] = 0;
   for (Prox = 3; Prox &lt;= n; Prox++) A[Prox] = A[A[Prox]] + 1;
 }
@@ -283,7 +290,11 @@ Base[c] = 2 × (Base[c-1] + w<sub>c-1</sub>)</div><p class="small muted">w<sub>c
 <tr><td>4</td><td>1</td><td class="mono">1101 (13)</td><td>-</td><td>-</td><td>c = MaxCompCod, para</td></tr></table></div>
 <p>Decodificando <code>1101</code>: i = 13 - 12 + 3 = <b>4</b>, ou seja, <b>cada</b>.</p>
 <details class="card"><summary><b>Ver os pseudocódigos Codifica e Decodifica</b> (só para apoio)</summary>
-<div class="formula" style="white-space:pre">Codifica (Base, Offset, i, MaxCompCod)
+<div class="formula" style="white-space:pre">/* Base[c]: valor do 1º código de comprimento c */
+/* Offset[c]: índice da 1ª palavra de comprimento c */
+/* i: índice da palavra   c: comprimento do código */
+/* MaxCompCod: tamanho do maior código */
+Codifica (Base, Offset, i, MaxCompCod)
 { c = 1;
   while ((i &gt;= Offset[c + 1]) &amp;&amp; (c + 1 &lt;= MaxCompCod)) c = c + 1;
   Codigo = i - Offset[c] + Base[c];
@@ -316,7 +327,10 @@ Decodifica (Base, Offset, ArqComprimido, MaxCompCod)
   <li>Lê os códigos, decodifica cada um (Decodifica) e grava a palavra correspondente no arquivo texto.</li>
 </ol>
 <details class="card"><summary><b>Ver os pseudocódigos</b> (só para apoio)</summary>
-<div class="formula" style="white-space:pre">Compressao (ArqTexto, ArqComprimido)
+<div class="formula" style="white-space:pre">/* ArqTexto: arquivo original   ArqComprimido: arquivo de saída */
+/* Vocabulario: palavras distintas com frequência e ordem */
+/* Pos: posição da palavra no vocabulário */
+Compressao (ArqTexto, ArqComprimido)
 { /* Primeira etapa */
   while (!feof (ArqTexto))
   { Palavra = ExtraiProximaPalavra (ArqTexto);

@@ -444,7 +444,11 @@ R'<sub>j</sub> = ((R<sub>j</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>j-1</sub> | 
 <tr><td>Imprimir <b>todas</b></td><td>É o código do slide: <code>printf</code> no teste.</td></tr>
 <tr><td>Mudar o tipo de retorno</td><td>Troque <code>void</code> pelo tipo pedido (normalmente <code>long</code>) na assinatura.</td></tr></table></div>
 <div class="box prova"><span class="t">Exemplo: BMHS com a última ocorrência (Prova 2024/1)</span>
-<div class="formula" style="white-space:pre;margin-bottom:0">long BMHS(TipoTexto T, long n, TipoPadrao P, long m)
+<div class="formula" style="white-space:pre;margin-bottom:0">/* T: texto    n: tamanho do texto */
+/* P: padrão   m: tamanho do padrão */
+/* i: fim da janela   k: posição em T */
+/* j: posição em P   d: tabela de deslocamentos */
+long BMHS(TipoTexto T, long n, TipoPadrao P, long m)
 { long i, j, k, d[MAXCHAR + 1], ultima = 0;          /* novo */
   for (j = 0; j &lt;= MAXCHAR; j++) d[j] = m + 1;
   for (j = 1; j &lt;= m; j++) d[P[j-1]] = m - j + 1;

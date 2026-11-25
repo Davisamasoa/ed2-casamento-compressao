@@ -21,6 +21,10 @@ window.CODES = {
   forca: {
     intro: '<p><b>Resumo:</b> para cada posição <code>i</code> possível, tenta casar o padrão inteiro, caractere por caractere.</p>',
     lines: [
+      ['/* T: texto    n: tamanho do texto */', 'assin'],
+      ['/* P: padrão   m: tamanho do padrão */', 'assin'],
+      ['/* i: início da tentativa no texto */', 'assin'],
+      ['/* k: posição em T   j: posição em P */', 'assin'],
       ['void ForcaBruta(TipoTexto T, long n, TipoPadrao P, long m)', 'assin'],
       ['{ long i, j, k;', 'vars'],
       ['  for (i = 1; i <= (n - m + 1); i++)', 'for'],
@@ -43,6 +47,11 @@ window.CODES = {
   bmh: {
     intro: '<p><b>Resumo:</b> monta a tabela <code>d</code> uma vez e depois desliza a janela, comparando de trás para frente e saltando de acordo com o caractere do texto alinhado ao <b>último</b> caractere do padrão.</p>',
     lines: [
+      ['/* T: texto    n: tamanho do texto */', 'assin'],
+      ['/* P: padrão   m: tamanho do padrão */', 'assin'],
+      ['/* i: fim da janela no texto */', 'assin'],
+      ['/* k: posição em T   j: posição em P */', 'assin'],
+      ['/* d: tabela de deslocamentos */', 'assin'],
       ['void BMH(TipoTexto T, long n, TipoPadrao P, long m)', 'assin'],
       ['{ long i, j, k, d[MAXCHAR + 1];', 'vars'],
       ['  for (j = 0; j <= MAXCHAR; j++) d[j] = m;', 'd1'],
@@ -75,6 +84,11 @@ window.CODES = {
   bmhs: {
     intro: '<p><b>Resumo:</b> igual ao BMH, mudando só duas coisas: a tabela (<code>m + 1</code> e inclui o último caractere) e o caractere usado no salto (o que vem <b>depois</b> da janela).</p>',
     lines: [
+      ['/* T: texto    n: tamanho do texto */', 'assin'],
+      ['/* P: padrão   m: tamanho do padrão */', 'assin'],
+      ['/* i: fim da janela no texto */', 'assin'],
+      ['/* k: posição em T   j: posição em P */', 'assin'],
+      ['/* d: tabela de deslocamentos */', 'assin'],
       ['void BMHS(TipoTexto T, long n, TipoPadrao P, long m)', 'assin'],
       ['{ long i, j, k, d[MAXCHAR + 1];', 'vars'],
       ['  for (j = 0; j <= MAXCHAR; j++) d[j] = m + 1;', 'd1'],
@@ -103,6 +117,11 @@ window.CODES = {
   shiftand: {
     intro: '<p><b>Resumo:</b> monta uma máscara de bits para cada caractere do padrão e, para cada caractere lido do texto, atualiza <code>R</code> com uma única conta: deslocar, ligar o 1º bit e fazer AND com a máscara.</p><p class="small muted">Versão em C escrita no mesmo estilo do Shift-And aproximado dos slides (os slides 37 e 38 trazem as máscaras e a fórmula).</p>',
     lines: [
+      ['/* T: texto    n: tamanho do texto */', 'assin'],
+      ['/* P: padrão   m: tamanho do padrão */', 'assin'],
+      ['/* Masc: máscara de cada caractere */', 'assin'],
+      ['/* R: prefixos de P que casam agora */', 'assin'],
+      ['/* i: índice no C (começa em 0) */', 'assin'],
       ['void ShiftAndExato(TipoTexto T, long n, TipoPadrao P, long m)', 'assin'],
       ['{ long Masc[MAXCHAR], i, R = 0;', 'vars'],
       ['  for (i = 0; i < MAXCHAR; i++) Masc[i] = 0;', 'zera'],
@@ -127,6 +146,14 @@ window.CODES = {
   aprox: {
     intro: '<p><b>Resumo:</b> o mesmo Shift-And, só que com <code>k + 1</code> máscaras: <code>R[0]</code> para zero erros, <code>R[1]</code> para um erro, e assim por diante. Cada máscara é atualizada a partir dela mesma e da anterior.</p><p class="small muted">Código do slide 55.</p>',
     lines: [
+      ['/* T: texto    n: tamanho do texto */', 'assin'],
+      ['/* P: padrão   m: tamanho do padrão */', 'assin'],
+      ['/* k: máximo de erros aceitos */', 'assin'],
+      ['/* Masc: máscara de cada caractere */', 'assin'],
+      ['/* R[j]: máscara com j erros */', 'assin'],
+      ['/* Ri: 10^(m-1), liga o 1º bit */', 'assin'],
+      ['/* Rant: R[j-1] antigo   Rnovo: R novo */', 'assin'],
+      ['/* i: índice no C (começa em 0) */', 'assin'],
       ['void ShiftAndAproximado(TipoTexto T, long n, TipoPadrao P, long m, long k)', 'assin'],
       ['{ long Masc[MAXCHAR], i, j, Ri, Rant, Rnovo;', 'vars'],
       ['  long R[NUMMAXERROS + 1];', 'vars'],
