@@ -135,7 +135,7 @@
     function reset() {
       T = inT.value; P = inP.value;
       if (!P || P.length > T.length) { steps = []; render(); return; }
-      steps = tipo === 'fb' ? Algos.forcaBruta(T, P) : tipo === 'bmh' ? Algos.bmh(T, P) : Algos.bmhs(T, P);
+      steps = tipo === 'fb' ? Algos.forcaBruta(T, P) : tipo === 'bm' ? Algos.bmOcorrencia(T, P) : tipo === 'bmh' ? Algos.bmh(T, P) : Algos.bmhs(T, P);
       cur = 0; sub = steps.length ? steps[0].comps.length : 0;
       if (dtab) {
         const tab = tipo === 'bmh' ? Algos.tabelaBMH(P) : Algos.tabelaBMHS(P);
@@ -171,6 +171,15 @@
       else {
         msg += st.found ? '<span class="pill ok">Casamento encontrado</span> ' : '<span class="pill bad">Não casou</span> ';
         if (tipo === 'fb') msg += 'A janela anda 1 posição.';
+        else if (tipo === 'bm') {
+          if (st.found) msg += 'Depois de um casamento, a janela anda 1 posição.';
+          else {
+            const col = st.comps[st.comps.length - 1], c = T[col.t], q = P.lastIndexOf(c, col.p - 1);
+            msg += q >= 0
+              ? `Procurando <b>${esc(vis(c))}</b> no padrão à esquerda da colisão: está na posição ${q + 1}. A janela anda <b>${st.shift}</b> para alinhar os dois.`
+              : `Não existe <b>${esc(vis(c))}</b> no padrão à esquerda da colisão: o padrão passa inteiro por cima dele e anda <b>${st.shift}</b>.`;
+          }
+        }
         else if (st.shift === null) msg += 'Não há mais caractere para consultar: a busca termina.';
         else msg += `O salto é decidido pelo caractere <b>${esc(vis(st.shiftChar))}</b> (posição ${st.shiftIdx + 1}, marcado em azul${tipo === 'bmh' ? ', alinhado ao último caractere do padrão' : ', logo depois da janela'}): a janela anda <b>${st.shift}</b>.`;
       }
@@ -241,7 +250,7 @@
     toc(); codeBlocks();
     const det = $('.toc details');
     if (det && window.innerWidth <= 900) det.removeAttribute('open');
-    $$('.sim[data-alg=fb], .sim[data-alg=bmh], .sim[data-alg=bmhs]').forEach(alignSim);
+    $$('.sim[data-alg=fb], .sim[data-alg=bm], .sim[data-alg=bmh], .sim[data-alg=bmhs]').forEach(alignSim);
     $$('.sim[data-alg=exato], .sim[data-alg=aprox]').forEach(shiftAndSim);
   });
 })();

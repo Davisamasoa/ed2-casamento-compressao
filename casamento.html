@@ -29,7 +29,8 @@
   <a href="#shiftand">11. Shift-And exato</a>
   <a href="#aproximado">12. Casamento aproximado</a>
   <a href="#shiftaprox">13. Shift-And aproximado</a>
-  <a href="#resumo">14. Resumo para a prova</a>
+  <a href="#adaptar">14. Como adaptar os códigos</a>
+  <a href="#resumo">15. Resumo para a prova</a>
 </details></aside>
 
 <main>
@@ -151,6 +152,28 @@ Texto exemplo. Texto tem palavras. Palavras exercem fascínio.</p>
 <div class="grid2">
   <div class="card"><h4>Heurística ocorrência</h4><p class="small">Alinha o caractere do texto que causou a colisão com o <b>1º caractere igual a ele no padrão, à esquerda do ponto de colisão</b>.</p><p class="small">No exemplo: a colisão foi com <code>c</code>, então a janela anda até um <code>c</code> do padrão ficar embaixo desse <code>c</code> do texto.</p></div>
   <div class="card"><h4>Heurística casamento</h4><p class="small">Ao mover o padrão, faz a janela casar com o <b>pedaço do texto que já tinha casado</b> antes da colisão.</p><p class="small">No exemplo: já tinha casado <code>ac</code>; a janela anda até outro <code>ac</code> do padrão ficar embaixo dele.</p></div>
+</div>
+<h3>Receita da heurística ocorrência (é a que cai na prova)</h3>
+<ol>
+  <li>Encaixe o padrão no começo do texto.</li>
+  <li>Compare <b>da direita para a esquerda</b>. Se todos casarem: achou (anote a posição de início) e ande <b>1</b> posição.</li>
+  <li>Na primeira diferença, olhe o caractere <b>do texto</b> que colidiu (chame de <b>x</b>).</li>
+  <li>Procure <b>x</b> no padrão, só <b>à esquerda</b> do ponto de colisão, começando do mais próximo.
+    <ul><li>Achou: ande o necessário para esse x do padrão ficar embaixo do x do texto. O salto é a distância entre as duas posições no padrão.</li>
+    <li>Não achou: o padrão passa inteiro por cima do x. O salto é (posição da colisão no padrão).</li></ul></li>
+  <li>Repita até a janela passar do fim do texto.</li>
+</ol>
+<div class="box ideia"><span class="t">Exemplo do slide, em números</span>P = <code>cacbac</code>, T = <code>aabcaccacbac</code>. Compara c=c, a=a, e colide na posição 4 do padrão (<code>b</code>) com o <code>c</code> do texto. À esquerda da posição 4, o <code>c</code> mais próximo está na posição 3. Salto = 4 - 3 = <b>1</b>. Na janela seguinte (começando na posição 2), a colisão é entre o <code>a</code> da posição 5 do padrão e um <code>c</code> do texto; o <code>c</code> mais próximo à esquerda da posição 5 está na posição 3: salto 5 - 3 = <b>2</b>. Continuando, o padrão casa na posição 7. Confira no simulador abaixo.</div>
+<div class="box cuidado"><span class="t">Diferença para o BMH</span>No BM ocorrência, o caractere usado é o <b>da colisão</b>, e a busca no padrão é <b>à esquerda do ponto de colisão</b>. No BMH, o caractere é sempre o do <b>fim da janela</b>, e o salto vem da tabela. Por isso os dois dão saltos diferentes quando a colisão não acontece logo no último caractere.</div>
+<p class="small muted">Os slides não dizem quanto andar depois de um casamento completo. Aqui usamos 1 posição; confirme a convenção com o professor.</p>
+<div class="sim" data-alg="bm">
+  <div class="head"><strong>Simulador: Boyer-Moore com heurística ocorrência</strong><span class="pill">salto pelo caractere da colisão</span></div>
+  <div class="controls">
+    <label class="grow">Texto<input type="text" name="t" value="aabcaccacbac"></label>
+    <label class="grow">Padrão<input type="text" name="p" value="cacbac"></label>
+    <div class="btns"><button data-a="prev">Voltar</button><button class="pri" data-a="next">Próximo passo</button><button data-a="all">Resumo</button></div>
+  </div>
+  <div class="strip"></div><div class="status"></div>
 </div>
 <p>O BM escolhe a heurística que dá o <b>maior deslocamento</b>. O problema: fazer essa escolha custa comparações a cada colisão, o que pesa no tempo. Ao longo dos anos surgiram simplificações, e as melhores usaram <b>só a heurística ocorrência</b>. É daí que vêm o BMH e o BMHS.</p>
 </section>
@@ -361,11 +384,71 @@ R'<sub>j</sub> = ((R<sub>j</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>j-1</sub> | 
 </div>
 <h3>O código</h3>
 <div class="code" data-code="aprox"></div>
+<h3>Receita para alterar o código (cai na prova)</h3>
+<p>Cada tipo de erro é <b>um termo</b> na conta de <code>Rnovo</code> dentro do laço de <code>j</code>. Para escolher os erros, é só manter ou tirar termos:</p>
+<div class="tw"><table><tr><th>Erro</th><th>Na fórmula</th><th>No código</th><th>Por quê</th></tr>
+<tr><td><span class="pill blue">Inserção</span></td><td class="mono">R<sub>j-1</sub></td><td class="mono">Rant</td><td><code>Rant</code> guarda o R<sub>j-1</sub> <b>antigo</b> (antes de ler o caractere)</td></tr>
+<tr><td><span class="pill">Substituição</span></td><td class="mono">R<sub>j-1</sub> &gt;&gt; 1</td><td class="mono">Rant &gt;&gt; 1</td><td>antigo e deslocado: anda no texto e no padrão</td></tr>
+<tr><td><span class="pill bad">Retirada</span></td><td class="mono">R'<sub>j-1</sub> &gt;&gt; 1</td><td class="mono">Rnovo &gt;&gt; 1</td><td>antes da atribuição, <code>Rnovo</code> ainda tem o R' <b>novo</b> do nível anterior</td></tr>
+<tr><td>Sempre</td><td class="mono">(R<sub>j</sub> &gt;&gt; 1) &amp; M</td><td class="mono">(R[j] &gt;&gt; 1) &amp; Masc[T[i]]</td><td>casamento normal, nunca sai</td></tr>
+<tr><td>Sempre</td><td class="mono">10<sup>m-1</sup></td><td class="mono">Ri</td><td>nunca sai</td></tr></table></div>
+<p>O código do slide junta substituição e retirada num termo só: <code>((Rant | Rnovo) &gt;&gt; 1)</code> é o mesmo que <code>(Rant &gt;&gt; 1) | (Rnovo &gt;&gt; 1)</code>. Ao alterar, separe os dois para tirar só o que precisa.</p>
+<div class="tw"><table><tr><th>Pedido</th><th>Linha do Rnovo dentro do laço de j</th></tr>
+<tr><td>Só inserção</td><td class="mono">((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | Rant | Ri</td></tr>
+<tr><td>Só substituição</td><td class="mono">((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | (Rant &gt;&gt; 1) | Ri</td></tr>
+<tr><td>Só retirada</td><td class="mono">((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | (Rnovo &gt;&gt; 1) | Ri</td></tr>
+<tr><td>Inserção e substituição</td><td class="mono">((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | Rant | (Rant &gt;&gt; 1) | Ri</td></tr>
+<tr><td>Os três</td><td class="mono">((R[j] &gt;&gt; 1) &amp; Masc[T[i]]) | Rant | ((Rant | Rnovo) &gt;&gt; 1) | Ri</td></tr></table></div>
+<ul>
+<li>Se nem inserção nem substituição forem usadas, <code>Rant</code> não serve para mais nada: apague <code>Rant = R[0];</code> e <code>Rant = R[j];</code>. Se algum dos dois for usado, essas linhas <b>precisam</b> ficar, e <code>Rant = R[j]</code> vem <b>antes</b> de <code>R[j] = Rnovo</code>.</li>
+<li>Para imprimir também as ocorrências <b>exatas</b>, teste <code>R[0]</code> logo depois de atualizá-lo: <code>if ((R[0] &amp; 1) != 0) printf(...exato...)</code>. O teste do fim, com <code>Rnovo</code>, continua dando as aproximadas (até k erros).</li>
+</ul>
+
 </section>
 
 <!-- 14 -->
+<section class="cap" id="adaptar">
+<h2><span class="n">14</span>Como adaptar os códigos</h2>
+<p>A prova costuma pedir um dos algoritmos com uma pequena mudança no que ele devolve. A receita: <b>escreva o algoritmo como no slide</b> e mexa só na linha em que ele detecta o casamento.</p>
+<h3>Onde fica o "achou" em cada algoritmo</h3>
+<div class="tw"><table><tr><th>Algoritmo</th><th>Teste de casamento</th><th>Início da ocorrência</th><th>Fim da ocorrência</th></tr>
+<tr><td>Força bruta</td><td class="mono">if (j &gt; m)</td><td class="mono">i</td><td class="mono">i + m - 1</td></tr>
+<tr><td>BMH e BMHS</td><td class="mono">if (j == 0)</td><td class="mono">k + 1</td><td class="mono">i</td></tr>
+<tr><td>Shift-And exato</td><td class="mono">if ((R &amp; 1) != 0)</td><td class="mono">i - m + 2</td><td class="mono">i + 1</td></tr>
+<tr><td>Shift-And aproximado</td><td class="mono">if ((Rnovo &amp; 1) != 0)</td><td>não é definido (os erros mudam o tamanho)</td><td class="mono">i + 1</td></tr></table></div>
+<p class="small muted">No Shift-And o laço usa <code>i</code> começando em 0 (índice do C), por isso o <code>+ 1</code> e o <code>+ 2</code>. Nos outros, <code>i</code> já conta a partir de 1.</p>
+<h3>As mudanças que mais caem</h3>
+<div class="tw"><table><tr><th>A questão pede...</th><th>O que fazer</th></tr>
+<tr><td>Retornar a <b>primeira</b> ocorrência</td><td>No teste de casamento, <code>return</code> da posição. Depois do laço, <code>return 0;</code></td></tr>
+<tr><td>Retornar a <b>última</b> ocorrência</td><td>Crie <code>long ultima = 0;</code>. No teste, <code>ultima = posição;</code>. No fim, <code>return ultima;</code></td></tr>
+<tr><td>Retornar a <b>quantidade</b></td><td>Crie <code>long cont = 0;</code>. No teste, <code>cont++;</code>. No fim, <code>return cont;</code></td></tr>
+<tr><td>Imprimir <b>todas</b></td><td>É o código do slide: <code>printf</code> no teste.</td></tr>
+<tr><td>Mudar o tipo de retorno</td><td>Troque <code>void</code> pelo tipo pedido (normalmente <code>long</code>) na assinatura.</td></tr></table></div>
+<div class="box prova"><span class="t">Exemplo: BMHS com a última ocorrência (Prova 2024/1)</span>
+<div class="formula" style="white-space:pre;margin-bottom:0">long BMHS(TipoTexto T, long n, TipoPadrao P, long m)
+{ long i, j, k, d[MAXCHAR + 1], ultima = 0;          /* novo */
+  for (j = 0; j &lt;= MAXCHAR; j++) d[j] = m + 1;
+  for (j = 1; j &lt;= m; j++) d[P[j-1]] = m - j + 1;
+  i = m;
+  while (i &lt;= n)
+  { k = i;  j = m;
+    while (j &gt; 0 &amp;&amp; T[k-1] == P[j-1]) { k--; j--; }
+    if (j == 0) ultima = k + 1;                       /* mudou */
+    i += d[T[i]];
+  }
+  return ultima;                                      /* novo */
+}</div></div>
+<div class="box cuidado"><span class="t">O que decorar de cada código</span>
+<ul style="margin:4px 0 0">
+<li><b>BMH:</b> <code>d[j] = m</code>; laço <code>j &lt; m</code> com <code>m - j</code>; salto <code>d[T[i-1]]</code>.</li>
+<li><b>BMHS:</b> <code>d[j] = m + 1</code>; laço <code>j &lt;= m</code> com <code>m - j + 1</code>; salto <code>d[T[i]]</code>.</li>
+<li><b>Shift-And:</b> <code>Masc[P[i-1] + 127] |= 1 &lt;&lt; (m - i)</code>; <code>R = ((R &gt;&gt; 1) | Ri) &amp; Masc[T[i] + 127]</code>; teste <code>R &amp; 1</code>.</li>
+</ul></div>
+</section>
+
+<!-- 15 -->
 <section class="cap" id="resumo">
-<h2><span class="n">14</span>Resumo para a prova</h2>
+<h2><span class="n">15</span>Resumo para a prova</h2>
 <div class="tw"><table>
 <tr><th>Algoritmo</th><th>Como procura</th><th>Pré-processamento</th><th>Custo</th><th>Marca registrada</th></tr>
 <tr><td><b>Força bruta</b></td><td>Toda posição, esquerda para direita</td><td>Nenhum</td><td class="mono">O(mn) pior</td><td>Anda 1 casa sempre</td></tr>
@@ -379,7 +462,9 @@ R'<sub>j</sub> = ((R<sub>j</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>j-1</sub> | 
 <ul style="margin:6px 0 0">
 <li>Sei montar a tabela d do BMH e do BMHS de cabeça?</li>
 <li>Sei dizer qual caractere decide o salto em cada um?</li>
+<li>Sei fazer o passo a passo do BM com heurística ocorrência?</li>
 <li>Sei montar as máscaras M e preencher a tabela do Shift-And linha a linha?</li>
+<li>Sei adaptar um código para retornar a primeira, a última ou a quantidade de ocorrências?</li>
 <li>Sei qual pedaço da fórmula aproximada é inserção, substituição e retirada?</li>
 <li>Sei explicar cada linha dos códigos em C (inclusive os <code>-1</code> de índice)?</li>
 </ul></div>
@@ -390,6 +475,7 @@ R'<sub>j</sub> = ((R<sub>j</sub> &gt;&gt; 1) &amp; M[T[i]]) | R<sub>j-1</sub> | 
 <footer>Material de revisão baseado nos slides de Estrutura de Dados II (BCC203), UFOP, Prof. Guilherme Tavares de Assis.</footer>
 
 <script src="algos.js"></script>
+<script src="bm.js"></script>
 <script src="codes.js"></script>
 <script src="graph.js"></script>
 <script src="ui.js"></script>
