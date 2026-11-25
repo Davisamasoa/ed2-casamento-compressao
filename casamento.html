@@ -85,7 +85,7 @@
   <li><b>Ocorrências:</b> para cada palavra, a lista das posições onde ela aparece.</li>
 </ul>
 <div class="card">
-<p class="mono small" style="margin:0 0 6px;white-space:pre;overflow-x:auto">1     7         16    22  26        36       45      53
+<p class="mono small" style="margin:0 0 6px;white-space:pre;overflow-x:auto">1     7        16    22  26        36       45      53
 Texto exemplo. Texto tem palavras. Palavras exercem fascínio.</p>
 <div class="tw" style="margin-bottom:0"><table><tr><th>Vocabulário</th><th>Ocorrências</th></tr>
 <tr><td>exemplo</td><td class="mono">7</td></tr><tr><td>exercem</td><td class="mono">45</td></tr><tr><td>fascínio</td><td class="mono">53</td></tr>
@@ -108,7 +108,7 @@ Texto exemplo. Texto tem palavras. Palavras exercem fascínio.</p>
   <div class="card"><h4>Frase</h4><p class="small">Mais difícil. Cada palavra é pesquisada separadamente e as listas são percorridas <b>em sincronia</b>, procurando posições em que as palavras aparecem em sequência.</p></div>
 </div>
 <h3>Exemplo com TRIE</h3>
-<p>Para o texto "Texto tem palavras. Palavras exercem fascínio.", cada palavra lida é pesquisada na TRIE. Se não está lá, é inserida com uma lista nova contendo sua posição. Se já está, a posição nova vai para o fim da lista dela.</p>
+<p>Para o mesmo texto ("Texto exemplo. Texto tem palavras. Palavras exercem fascínio."), cada palavra lida é pesquisada na TRIE. Se não está lá, é inserida com uma lista nova contendo sua posição. Se já está, a posição nova vai para o fim da lista dela.</p>
 <figure class="fig"><svg id="g-trie" viewBox="0 0 640 250" width="640"></svg><figcaption>O vocabulário vira uma TRIE; cada folha guarda a lista de ocorrências.</figcaption></figure>
 </section>
 
