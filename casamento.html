@@ -305,6 +305,31 @@ Texto exemplo. Texto tem palavras. Palavras exercem fascínio.</p>
   <div class="card"><h4>&amp; M[T[i]]</h4><p class="small">Filtra: só fica o prefixo j + 1 se a letra lida for igual a p<sub>j+1</sub>.</p></div>
 </div>
 <p>Com paralelismo de bit, a nova máscara sai em <code>O(1)</code>. Logo, a pesquisa toda custa <code>O(n)</code>, desde que o padrão caiba em poucas palavras do computador.</p>
+<h3>Pensando com fichas: P = ana em T = banana</h3>
+<p>Esqueça os bits por um momento. Desenhe uma trilha com uma casa para cada letra do padrão: <code>[a] [n] [a]</code>. Uma ficha na casa j quer dizer "as últimas j letras lidas são as j primeiras do padrão". Ficha na última casa: achou.</p>
+<p>A cada letra lida do texto, três passos:</p>
+<ol>
+<li><b>Todas as fichas andam uma casa</b> para a direita. A que sai da última casa cai fora. É o <code>R &gt;&gt; 1</code>.</li>
+<li><b>Entra uma ficha nova na casa 1</b>, porque o padrão pode começar em qualquer letra. É o <code>| 10<sup>m-1</sup></code>. Sem isso, R ficaria 000 para sempre.</li>
+<li><b>Sai toda ficha cuja casa não tem a letra lida.</b> É o <code>&amp; M[T[i]]</code>. A máscara é a resposta pronta: M[a] = 101 diz "lendo a, só ficam fichas nas casas 1 e 3".</li>
+</ol>
+<p>Máscaras: M[a] = 101, M[n] = 010, as outras 000. As casas são os bits de R (ficha = 1):</p>
+<div class="tw"><table><tr><th>Leu</th><th>R &gt;&gt; 1</th><th>| 100</th><th>&amp; M</th><th>novo R</th><th></th></tr>
+<tr><td class="mono">b</td><td class="mono">000</td><td class="mono">100</td><td class="mono">&amp; 000</td><td class="mono">000</td><td class="small">a ficha nova sai: b não é a</td></tr>
+<tr><td class="mono">a</td><td class="mono">000</td><td class="mono">100</td><td class="mono">&amp; 101</td><td class="mono">100</td><td class="small">a ficha nova fica</td></tr>
+<tr><td class="mono">n</td><td class="mono">010</td><td class="mono">110</td><td class="mono">&amp; 010</td><td class="mono">010</td><td class="small">a antiga foi para a casa n e fica; a nova sai</td></tr>
+<tr><td class="mono">a</td><td class="mono">001</td><td class="mono">101</td><td class="mono">&amp; 101</td><td class="mono">10<span class="bit1">1</span></td><td class="small"><b>achou</b> (começa na posição 2)</td></tr>
+<tr><td class="mono">n</td><td class="mono">010</td><td class="mono">110</td><td class="mono">&amp; 010</td><td class="mono">010</td><td class="small"></td></tr>
+<tr><td class="mono">a</td><td class="mono">001</td><td class="mono">101</td><td class="mono">&amp; 101</td><td class="mono">10<span class="bit1">1</span></td><td class="small"><b>achou</b> (começa na posição 4)</td></tr></table></div>
+<div class="box ideia"><span class="t">char é número</span>Em C, um <code>char</code> é um inteiro de 1 byte. <code>'a'</code> vale 97 e <code>'n'</code> vale 110 (tabela ASCII). Por isso dá para usar uma letra como índice: <code>Masc['a']</code> é o mesmo que <code>Masc[97]</code>. O vetor <code>Masc</code> é um armário com uma gaveta por código de caractere. O <code>+ 127</code> só evita índice negativo, porque um <code>char</code> acentuado pode valer menos que zero.</div>
+<h3>Lendo o código em C</h3>
+<ul>
+<li><code>Masc[P[i-1] + 127] |= 1 &lt;&lt; (m - i)</code>: na gaveta da i-ésima letra do padrão, liga o bit da casa i. O <code>&lt;&lt;</code> conta casas a partir da <b>direita</b>, e a casa i (contada da esquerda) fica a <code>m - i</code> casas da ponta direita. Com m = 3: i = 1 dá 100, i = 2 dá 010, i = 3 dá 001. O <code>|=</code> liga sem apagar: M[a] = 100 | 001 = 101.</li>
+<li><code>1 &lt;&lt; (m - 1)</code> é o <code>10<sup>m-1</sup></code> da fórmula: liga só a casa 1.</li>
+<li><code>(unsigned long)R &gt;&gt; 1</code>: o <code>unsigned</code> garante que entra 0 na esquerda.</li>
+<li><code>R &amp; 1</code> testa só o último bit (a última casa).</li>
+<li><code>i - m + 2</code>: aqui <code>i</code> começa em 0. A ocorrência termina na posição <code>i + 1</code> (contando de 1), então começa em <code>i + 1 - m + 1</code>.</li>
+</ul>
 <div class="code" data-code="shiftand"></div>
 <div class="sim" data-alg="exato">
   <div class="head"><strong>Simulador: tabela do Shift-And exato</strong><span class="pill">igual à tabela dos slides</span></div>
